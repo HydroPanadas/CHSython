@@ -1,5 +1,5 @@
 from tkinter import *
-from idlelib.ToolTip import *
+#from idlelib.ToolTip import *
 from tkinter import ttk
 from tkinter import messagebox
 from tkcalendar import Calendar, DateEntry
@@ -20,14 +20,14 @@ import re
 import time
 from shapely import wkt
 from shapely.geometry import Polygon
-from shapely.ops import cascaded_union
+from shapely.ops import unary_union
 import shapefile
 import pygeoif
 import fileinput
 from xml.dom import minidom
 import xml.etree.cElementTree as ET
 import sys
-sys.path.append('C:/Program Files/CARIS/HIPS and SIPS/11.4/python/3.5')
+sys.path.append('C:/Program Files/CARIS/HIPS and SIPS/12.1/python/3.11')
 import caris.coverage as cov
 import caris
 from xml.dom import minidom
@@ -37,7 +37,7 @@ from hips_project import *
 
 
 owd = getcwd()
-Caris = ('C:/Program Files/CARIS/HIPS and SIPS/11.4/bin')
+Caris = ('C:/Program Files/CARIS/HIPS and SIPS/12.1/bin')
 BASE4 = ('C:/Program Files/CARIS/BASE Editor/4.4/bin')
 BASE5 = ('C:/Program Files/CARIS/BASE Editor/5.5/bin')
 PosPac = ('C:/Program Files/Applanix/POSPac MMS 8.3')
@@ -216,7 +216,7 @@ class Application(Frame):
         RAW_Filedir = filedialog.askdirectory(title='Select Raw Sensor File ' +
                                               'Directory', initialdir=raw)
         self.RAW_F.set(RAW_Filedir)
-        tip_RAW = ToolTip(self.RAW_f, (self.RAW_F.get()))
+        # tip_RAW = ToolTip(self.RAW_f, (self.RAW_F.get()))
 
 
     def Search_HDCS_Data(self):
@@ -229,7 +229,7 @@ class Application(Frame):
         HDCS_Filedir = filedialog.askdirectory(title='Select Proccessing folder' +
                                                'Directory', initialdir=hdcs)
         self.HDCS_D.set(HDCS_Filedir)
-        tip_HDCS = ToolTip(self.HDCS_d, (self.HDCS_D.get()))
+        # tip_HDCS = ToolTip(self.HDCS_d, (self.HDCS_D.get()))
 
 
     def Search_VesselFile(self):
@@ -244,7 +244,7 @@ class Application(Frame):
                                        title = 'Select Vessel File',
                                        filetypes = (("Vessel Config","*.hvf"),("all files","*.*")))
         self.VESSEL_N.set(VESSEL_File)
-        tip_Vessel = ToolTip(self.VESSEL_n, (self.VESSEL_N.get()))
+        # tip_Vessel = ToolTip(self.VESSEL_n, (self.VESSEL_N.get()))
 
 
     def Search_Aux_Data(self):
@@ -257,9 +257,9 @@ class Application(Frame):
         AUX_Filedir = filedialog.askdirectory(title='Select Folder ' +
                                                 'Directory', initialdir=Aux)
         self.AUX_F.set(AUX_Filedir)
-        tip_AUX_F = ToolTip(self.AUX_f, (self.AUX_F.get()))
+        # tip_AUX_F = ToolTip(self.AUX_f, (self.AUX_F.get()))
         self.POSDIR.set(AUX_Filedir)
-        tip_POSDir = ToolTip(self.POSDir, (self.POSDIR.get()))
+        # tip_POSDir = ToolTip(self.POSDir, (self.POSDIR.get()))
 
 
 
@@ -275,7 +275,7 @@ class Application(Frame):
                                        title = 'Select RMS File',
                                        filetypes = (("RMS","*.out"),("all files","*.*")))
         self.AUX_F2.set(AUX_Filedir)
-        tip_AUX_F2 = ToolTip(self.AUX_f2, (self.AUX_F2.get()))
+        # tip_AUX_F2 = ToolTip(self.AUX_f2, (self.AUX_F2.get()))
 
 
     def Search_Aux_Data3(self):
@@ -291,7 +291,7 @@ class Application(Frame):
                                     title = 'Select SBET File',
                                     filetypes = (("SBET","*.out"),("all files","*.*")))
         self.AUX_F3.set(AUX_Filedir)
-        tip_AUX_F3 = ToolTip(self.AUX_f3, (self.AUX_F3.get()))
+        # tip_AUX_F3 = ToolTip(self.AUX_f3, (self.AUX_F3.get()))
 
 
     def Search_GNSS_Obs(self):
@@ -308,7 +308,7 @@ class Application(Frame):
                                        filetypes = (("Obs","*.*o"),("all files","*.*")))
 
         self.GNSSFile.set(Gnss_File)
-        tip_GNSSFile = ToolTip(self.GnssFile, (self.GNSSFile.get()))
+        # tip_GNSSFile = ToolTip(self.GnssFile, (self.GNSSFile.get()))
 
 
     def Search_OUTPUT(self):
@@ -319,7 +319,7 @@ class Application(Frame):
         out = self.OUT_F.get()
 
         OUTPUT_Filedir = filedialog.askdirectory(title='Select Output Folder ', initialdir=out)
-        tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
+        # tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
         self.OUT_F.set(str(OUTPUT_Filedir))
 
 
@@ -376,7 +376,7 @@ class Application(Frame):
                                        title = 'Select Tide File',
                                        filetypes = (("Tide Files","*.tid"),("all files","*.*")))
         self.T_F.set(Tide_File)
-        tip_MODEL = ToolTip(self.T_f, (self.T_F.get()))
+        # tip_MODEL = ToolTip(self.T_f, (self.T_F.get()))
 
 
     def Search_Model_File(self):
@@ -392,7 +392,7 @@ class Application(Frame):
                                        filetypes = (("all files","*.*"), ("Text Model File","*.txt"),("CSV","*.csv"), ("XYZ","*.xyz"),
                                                     ("Raster Model File","*.csar")))
         self.M_F.set(Model_File)
-        tip_MODEL = ToolTip(self.M_f, (self.M_F.get()))
+        # tip_MODEL = ToolTip(self.M_f, (self.M_F.get()))
 
 
     def Search_Info_File(self):
@@ -407,7 +407,7 @@ class Application(Frame):
                                        title = 'Select Model Info File',
                                        filetypes = (("Tide Info Files","*.info"),("all files","*.*")))
         self.INFO_F.set(INFO_File)
-        tip_INFO = ToolTip(self.Info_f, (self.INFO_F.get()))
+        # tip_INFO = ToolTip(self.Info_f, (self.INFO_F.get()))
 
 
     def Search_Grid_Dir(self):
@@ -419,7 +419,7 @@ class Application(Frame):
 
         Grid_dir = filedialog.askdirectory(initialdir = grid, title='Select Surface directory ')
         self.GRID_DIR.set(str(Grid_dir))
-        tip_GRID = ToolTip(self.GRID_dir, (self.GRID_DIR.get()))
+        # tip_GRID = ToolTip(self.GRID_dir, (self.GRID_DIR.get()))
 
 
     def Search_CSAR_File(self):
@@ -432,7 +432,7 @@ class Application(Frame):
                                                     ("all files","*.*")))
         CSAR_File = CSAR_File.replace("/", "\\")
         self.CSAR_F.set(CSAR_File)
-        tip_CSAR_F = ToolTip(self.CSAR_f, (self.CSAR_F.get()))
+        # tip_CSAR_F = ToolTip(self.CSAR_f, (self.CSAR_F.get()))
 
 
     def Search_GEOTIFF_File(self):  ## Not running Code
@@ -446,7 +446,7 @@ class Application(Frame):
                                                     ("all files","*.*")))
         GEOTIFF_File = GEOTIFF_File.replace("/", "\\")
         self.GEOTIFF_F.set(GEOTIFF_File)
-        tip_GEOTIFF_F = ToolTip(self.GEOTIFF_f, (self.GEOTIFF_F.get())) ## May not need once command line is availible
+        # tip_GEOTIFF_F = ToolTip(self.GEOTIFF_f, (self.GEOTIFF_F.get())) ## May not need once command line is availible
 
 
     def Search_LINE_File(self):
@@ -461,7 +461,7 @@ class Application(Frame):
                                        filetypes = (("ASCII Text","*.txt"),
                                                     ("all files","*.*")))
         self.LINE_F.set(LINE_File)
-        tip_LINE_F = ToolTip(self.LINE_f, (self.LINE_F.get()))
+        # tip_LINE_F = ToolTip(self.LINE_f, (self.LINE_F.get()))
 
 
     def Search_SpreadSheet_File(self):
@@ -476,7 +476,7 @@ class Application(Frame):
                                        filetypes = (("Spread Sheet","*.xlsx"),
                                                     ("all files","*.*")))
         self.REP_F.set(REP_File)
-        tip_REP_F = ToolTip(self.REP_f, (self.REP_F.get()))
+        # tip_REP_F = ToolTip(self.REP_f, (self.REP_F.get()))
 
 
     def Search_SpreadSheet_File2(self):
@@ -491,7 +491,7 @@ class Application(Frame):
                                        filetypes = (("Spread Sheet","*.xlsx"),
                                                     ("all files","*.*")))
         self.WREP_F.set(WREP_File)
-        tip_WREP_F = ToolTip(self.WREP_f, (self.WREP_F.get()))
+        # tip_WREP_F = ToolTip(self.WREP_f, (self.WREP_F.get()))
 
 
     def Search_VALSRC_Folder(self):
@@ -503,14 +503,14 @@ class Application(Frame):
         VALSRC_Filedir = filedialog.askdirectory(title='Select VALSRC folder' +
                                                'Directory', initialdir=Valsrc)
         self.VALSRC_F.set(VALSRC_Filedir)
-        tip_HDCS = ToolTip(self.VALSRC_f, (self.VALSRC_F.get()))
+        # tip_HDCS = ToolTip(self.VALSRC_f, (self.VALSRC_F.get()))
 
     def Search_DTMFolder(self):
         Valsrc = self.DTM_DIR.get()
         VALSRC_Filedir = filedialog.askdirectory(title='Select VALSRC folder' +
                                                'Directory', initialdir=Valsrc)
         self.DTM_DIR.set(VALSRC_Filedir)
-        tip_HDCS = ToolTip(self.DTM_dir, (self.DTM_DIR.get()))
+        # tip_HDCS = ToolTip(self.DTM_dir, (self.DTM_DIR.get()))
 
 
     def Search_QC_OUT(self): ## Not running Code
@@ -520,7 +520,7 @@ class Application(Frame):
         OUTPUT_QC = filedialog.askdirectory(title='Select QC Tools Output Folder')
         OUTPUT_QC = OUTPUT_QC.replace("/", "\\")
         self.QC_OUT.set(OUTPUT_QC)
-        tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
+        # tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
 
 
     def Search_ENC_Dir(self):  ## Not running Code
@@ -530,7 +530,7 @@ class Application(Frame):
         ENC_DIR = filedialog.askdirectory(title='Select QC Tools Output Folder')
         ENC_DIR = ENC_DIR.replace("/", "\\")
         self.ENC_DIR.set(ENC_DIR)
-        tip_Out = ToolTip(self.ENC_Dir, (self.ENC_DIR.get()))
+        # tip_Out = ToolTip(self.ENC_Dir, (self.ENC_DIR.get()))
 
 
     def Search_TrackLines (self):
@@ -1262,7 +1262,7 @@ class Application(Frame):
             self.AUX_F.set(A_F)
 
             ## ToolTips For Applanix Data
-            tip_AUX = ToolTip(self.AUX_f, str(self.AUX_F.get()))
+            # tip_AUX = ToolTip(self.AUX_f, str(self.AUX_F.get()))
 
             try:
                 ## Forget the SBET & RMS Options
@@ -1472,8 +1472,8 @@ class Application(Frame):
             self.AUX_F3.set(A_F3)
 
             ## ToolTips For Applanix Data
-            tip_AUX2 = ToolTip(self.AUX_f2, str(self.AUX_F2.get()))
-            tip_AUX3 = ToolTip(self.AUX_f3, str(self.AUX_F3.get()))
+            # tip_AUX2 = ToolTip(self.AUX_f2, str(self.AUX_F2.get()))
+            # tip_AUX3 = ToolTip(self.AUX_f3, str(self.AUX_F3.get()))
 
             try:
                 ## Forget the POSMV Options
@@ -1624,7 +1624,7 @@ class Application(Frame):
 
                     Import.write(' ' + SBETF)
                     Import.write(r' file:///' + HDCS_Folder + '/' + HIPSFILE + '/' + HIPSFILE + '.hips')
-                    Import.write(' > ' + Out + '/' + JD + '/2.Import_RMS' + JD + '_' + Year + '.txt' + '\n')
+                    Import.write(' > ' + Out + '/' + JD + '/2.Import_SBET' + JD + '_' + Year + '.txt' + '\n')
 
             ## Creating RMS Parameters
                     Import.write('carisbatch --run ImportHIPSFromAuxiliary --input-format ' +
@@ -1677,10 +1677,10 @@ class Application(Frame):
         self.OUT_F.set(OUT)
 
         ##ToolTips for HIPS Project Options
-        tip_RAW = ToolTip(self.RAW_f, (self.RAW_F.get()))
-        tip_HDCS = ToolTip(self.HDCS_d, (self.HDCS_D.get()))
-        tip_Vessel = ToolTip(self.VESSEL_n, (self.VESSEL_N.get()))
-        tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
+        # tip_RAW = ToolTip(self.RAW_f, (self.RAW_F.get()))
+        # tip_HDCS = ToolTip(self.HDCS_d, (self.HDCS_D.get()))
+        # tip_Vessel = ToolTip(self.VESSEL_n, (self.VESSEL_N.get()))
+        # tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
 
 
 ##    def Copy_HIPS(self):
@@ -2507,7 +2507,7 @@ class Application(Frame):
             self.Roll_D.set(Roll_D)
             self.SSP_D.set(SSP_D)
 
-            self.Caris_RAW_Tooltips()
+            # self.Caris_RAW_Tooltips()
 
             try:
                 ## Forget R2 Sonic options
@@ -2558,7 +2558,7 @@ class Application(Frame):
             self.IN_OFF.set(IN_O)
             self.REJ_OFF.set(R_O)
 
-            self.Caris_RAW_Tooltips()
+            # self.Caris_RAW_Tooltips()
 
             try:
                 ## Forget Konsberg options
@@ -2777,11 +2777,19 @@ class Application(Frame):
             self.Nav_d.grid(row=1, column=1, sticky=W, padx=1)
 
             ##GPS Height Device
+                   ##Project and Hips Data CSRS
             self.GPSH_D = StringVar()
-            self.GPS_h = Entry(self.KMALL_op, width=10, textvariable=self.GPSH_D, state='disabled')
-            self.GPS_h_text = Label(self.KMALL_op, text="GPS Height Device")
-            self.GPS_h_text.grid(row=2, column=0, sticky=W)
-            self.GPS_h.grid(row=2, column=1, sticky=W, padx=1)
+            gpsh_devs = ['EM_Height', 'SPO']
+
+            self.CRS_pos = ttk.Combobox(self.KMALL_op, values=gpsh_devs, width=10, textvariable=self.GPSH_D)
+            self.CRS_pos_text = Label(self.KMALL_op, text="GPS Height Device")
+            self.CRS_pos_text.grid(row=2, column=0, sticky=W)
+            self.CRS_pos.grid(row=2, column=1, sticky=W, padx=0)
+##            self.GPSH_D = StringVar()
+##            self.GPS_h = Entry(self.KMALL_op, width=10, textvariable=self.GPSH_D, state='disabled')
+##            self.GPS_h_text = Label(self.KMALL_op, text="GPS Height Device")
+##            self.GPS_h_text.grid(row=2, column=0, sticky=W)
+##            self.GPS_h.grid(row=2, column=1, sticky=W, padx=1)
 
             ##Heave Device
             self.Heave_D = StringVar()
@@ -3178,8 +3186,8 @@ class Application(Frame):
             self.H_MERGED.set(HEAVE_M)
 
             ##ToolTips for GPS Tides
-            tip_MODEL = ToolTip(self.M_f, (self.M_F.get()))
-            tip_INFO = ToolTip(self.Info_f, (self.INFO_F.get()))
+            # tip_MODEL = ToolTip(self.M_f, (self.M_F.get()))
+            # tip_INFO = ToolTip(self.Info_f, (self.INFO_F.get()))
 
             try:
                 ## Forget the Observed/Predicted Tides
@@ -3226,7 +3234,7 @@ class Application(Frame):
             self.H_MERGED.set(HEAVE_M)
 
             ## ToolTips for Observed/ Predicted Tides
-            tip_TIDEFILE = ToolTip(self.T_f, (self.T_F.get()))
+            # tip_TIDEFILE = ToolTip(self.T_f, (self.T_F.get()))
 
             try:
                 ## Forget the GPS Tide Options
@@ -3640,11 +3648,11 @@ class Application(Frame):
             except AttributeError:
                 pass
 
-        try:
-            ##Tool Tip for GRID Directory
-            tip_GRID = ToolTip(self.GRID_dir, str(self.GRID_DIR.get()))
-        except AttributeError:
-            pass
+        # try:
+        #     ##Tool Tip for GRID Directory
+        #     tip_GRID = ToolTip(self.GRID_dir, str(self.GRID_DIR.get()))
+        # except AttributeError:
+        #     pass
 
 
     def Create_Addto_Hips_Grid(self):
@@ -3955,7 +3963,7 @@ class Application(Frame):
                 pass
 
         #tip_LINE_F = ToolTip(self.LINE_f, str(self.LINE_F.get()))
-        tip_REP_F = ToolTip(self.REP_f, (self.REP_F.get()))
+        # tip_REP_F = ToolTip(self.REP_f, (self.REP_F.get()))
 
 
     def Load_BoundingPoly(self):
@@ -4421,7 +4429,7 @@ class Application(Frame):
         m = pygeoif.MultiPolygon(g)
         P = wkt.loads(str(m))
 
-        omega = cascaded_union([
+        omega = unary_union([
         Polygon(component.exterior) for component in P])
 
 
@@ -4878,7 +4886,7 @@ class Application(Frame):
         t_95_1d = 1.96
         t_95_2d = 2.45
 
-        IHO_orders = ['EXCLUSIVE', 'SPECIAL', '1A', '1B', '2', '3']
+        IHO_orders = [order] #['EXCLUSIVE', 'SPECIAL', '1A', '1B', '2', '3']
 
         if self.TPUQC.get()==1:
             ASCII_Out = pd.read_csv(Out + '/' + JD + '/' + TPUQCFolder + '/Coverage/' + 'Coverage_' + JD + '_' + Year + '.txt', sep=' ', header=0, low_memory=False)
@@ -4895,7 +4903,7 @@ class Application(Frame):
                                                    'yes', 'no')
                 P_W_A_TVU = round(((len(ASCII_Out[ASCII_Out['Within Allowable TVU'] == 'yes'])/len(ASCII_Out)))*100,2)
 
-                List_TVU.append(P_W_A_TVU)
+                #List_TVU.append(P_W_A_TVU)
 
                 Depth_mean = round(ASCII_Out['Depth'].mean(),3)
 
@@ -5071,19 +5079,19 @@ class Application(Frame):
             for c_idx, value in enumerate(row, 1):
                  worksheet.cell(row=r_idx, column=c_idx, value=value)
 
-        ## Determine User Order
-        if order == 'EXCLUSIVE':
-            PWATVU = List_TVU[0]
-        elif order == 'SPECIAL':
-            PWATVU = List_TVU[1]
-        elif order == '1A':
-            PWATVU = List_TVU[2]
-        elif order == '1B':
-            PWATVU = List_TVU[3]    
-        elif order == '2':
-            PWATVU = List_TVU[4]
-        elif order == '3':
-            PWATVU = List_TVU[5]
+##        ## Determine User Order
+##        if order == 'EXCLUSIVE':
+##            PWATVU = List_TVU[0]
+##        elif order == 'SPECIAL':
+##            PWATVU = List_TVU[1]
+##        elif order == '1A':
+##            PWATVU = List_TVU[2]
+##        elif order == '1B':
+##            PWATVU = List_TVU[3]    
+##        elif order == '2':
+##            PWATVU = List_TVU[4]
+##        elif order == '3':
+##            PWATVU = List_TVU[5]
 
         IHO_orders = ['EXCLUSIVE', 'SPECIAL', '1A', '1B', '2', '3']
         worksheet['A'+ str(line_count + 5)] = ('Summary')
@@ -5098,7 +5106,7 @@ class Application(Frame):
         worksheet['B'+ str(line_count + 7)] = (Total_Survey_Length)
         worksheet['B'+ str(line_count + 8)] = (Total_Survey_Area)
         worksheet['B'+ str(line_count + 9)] = (SVPCount)
-        worksheet['B'+ str(line_count + 10)] = str(PWATVU)
+        worksheet['B'+ str(line_count + 10)] = str(P_W_A_TVU)
 
         
         if self.TPUQC.get()==2:
@@ -5154,7 +5162,7 @@ class Application(Frame):
         worksheet['B'+ str(3 + Space)] = (Total_Survey_Length)
         worksheet['B'+ str(4 + Space)] = (Total_Survey_Area)
         worksheet['B'+ str(5 + Space)] = (SVPCount)
-        worksheet['B'+ str(6 + Space)] = str(PWATVU)
+        worksheet['B'+ str(6 + Space)] = str(P_W_A_TVU)
         if self.TPUQC.get()==2:
             worksheet['B'+ str(7 + Space)] = str(P_W_A_THU)
         Weekly.save(Weekly_Report)
@@ -5171,7 +5179,6 @@ class Application(Frame):
         for file in SVPfiles:
             if file.endswith((".asvp",".svp")):
                 svpcounter = svpcounter + 1
-        print(svpcounter)
         return(svpcounter)
                                   
         
@@ -5204,7 +5211,10 @@ class Application(Frame):
         LR = pd.DataFrame()
         for line in lines:
             dict_new = line.attributes
-            LR = LR.append(dict_new, ignore_index=True)
+            new_row = pd.DataFrame([dict_new])
+            LR = pd.concat([LR, new_row], ignore_index=True)
+            #LR = LR.append(dict_new, ignore_index=True)
+
         print (LR)
         i2 = 1
         while i2 <= len(vessel_n):
@@ -5433,36 +5443,36 @@ class Application(Frame):
 
         
 
-    def Caris_RAW_Tooltips(self):
+    # def Caris_RAW_Tooltips(self):
 
-        RAW_Tooltip = pd.read_csv('Tool_Tips_RAW.txt', delimiter=';', header=None)
+    #     RAW_Tooltip = pd.read_csv('Tool_Tips_RAW.txt', delimiter=';', header=None)
 
-        R_T = []
-        i = 0
-        while i !=  len(RAW_Tooltip):
-            rt = RAW_Tooltip.iloc[i,1]
-            R_T.append(rt)
-            i = i + 1
+    #     R_T = []
+    #     i = 0
+    #     while i !=  len(RAW_Tooltip):
+    #         rt = RAW_Tooltip.iloc[i,1]
+    #         R_T.append(rt)
+    #         i = i + 1
 
-        if self.S_T.get()==1:
-            RAW_tip1 = ToolTip(self.Nav_d_text, R_T[1])
-            RAW_tip2 = ToolTip(self.GPS_h_text, R_T[2])
-            RAW_tip3 = ToolTip(self.GPS_t_text, R_T[3])
-            RAW_tip4 = ToolTip(self.Heading_d_text, R_T[4])
-            RAW_tip5 = ToolTip(self.Heave_d_text, R_T[5])
-            RAW_tip6 = ToolTip(self.Pitch_d_text, R_T[6])
-            RAW_tip7 = ToolTip(self.Roll_d_text, R_T[7])
-            RAW_tip8 = ToolTip(self.SSP_d_text, R_T[8])
+    #     if self.S_T.get()==1:
+    #         RAW_tip1 = ToolTip(self.Nav_d_text, R_T[1])
+    #         RAW_tip2 = ToolTip(self.GPS_h_text, R_T[2])
+    #         RAW_tip3 = ToolTip(self.GPS_t_text, R_T[3])
+    #         RAW_tip4 = ToolTip(self.Heading_d_text, R_T[4])
+    #         RAW_tip5 = ToolTip(self.Heave_d_text, R_T[5])
+    #         RAW_tip6 = ToolTip(self.Pitch_d_text, R_T[6])
+    #         RAW_tip7 = ToolTip(self.Roll_d_text, R_T[7])
+    #         RAW_tip8 = ToolTip(self.SSP_d_text, R_T[8])
 
-        elif self.S_T.get()==2:
-            RAW_tip1 = ToolTip(self.D_s_text, R_T[12])
-            RAW_tip2 = ToolTip(self.IN_off, R_T[13])
-            RAW_tip3 = ToolTip(self.REJ_off, R_T[14])
+    #     elif self.S_T.get()==2:
+    #         RAW_tip1 = ToolTip(self.D_s_text, R_T[12])
+    #         RAW_tip2 = ToolTip(self.IN_off, R_T[13])
+    #         RAW_tip3 = ToolTip(self.REJ_off, R_T[14])
 
-        elif self.S_T.get()==3:
-            RAW_tip1 = ToolTip(self.D_s_text, R_T[12])
-            RAW_tip2 = ToolTip(self.IN_off, R_T[13])
-            RAW_tip3 = ToolTip(self.REJ_off, R_T[14])
+    #     elif self.S_T.get()==3:
+    #         RAW_tip1 = ToolTip(self.D_s_text, R_T[12])
+    #         RAW_tip2 = ToolTip(self.IN_off, R_T[13])
+    #         RAW_tip3 = ToolTip(self.REJ_off, R_T[14])
 
 
     def Help(self):
