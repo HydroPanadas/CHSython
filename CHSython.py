@@ -27,6 +27,7 @@ import fileinput
 from xml.dom import minidom
 import xml.etree.cElementTree as ET
 import sys
+#sys.path.append('C:/Program Files/CARIS/HIPS and SIPS/11.4/python/3.11')
 sys.path.append('C:/Program Files/CARIS/HIPS and SIPS/12.1/python/3.11')
 import caris.coverage as cov
 import caris
@@ -38,24 +39,17 @@ from hips_project import *
 
 owd = getcwd()
 Caris = ('C:/Program Files/CARIS/HIPS and SIPS/12.1/bin')
+#Caris = ('C:/Program Files/CARIS/HIPS and SIPS/11.4/bin')
 BASE4 = ('C:/Program Files/CARIS/BASE Editor/4.4/bin')
 BASE5 = ('C:/Program Files/CARIS/BASE Editor/5.5/bin')
-PosPac = ('C:/Program Files/Applanix/POSPac MMS 8.3')
 QCTools = ('C:/Users/LegerMi/Downloads/QCTools.3.6.1')
-Python = ('C:/Users/LegerMI/AppData/Local/Programs/Python/Python35')
-##CATools = ('C:/Tools/CATools.2.3.0')
+Python = ('C:/Users/LegerMI/AppData/Local/Programs/Python/Python311')
+
 
 def CONV_DOY():
     """ Opens and Run Julian Day Convertor"""
     chdir(owd)
     p = S.check_call(Python + "/python.exe " + owd + "/JD.py", shell=True)
-    #p = S.Popen(['JD.exe'])
-    #p.communicate()
-
-
-def IWLStoHIPSTIDE():
-    chdir(owd)
-    p = S.check_call(Python + "/python.exe " + owd + "/Convert_IWLS.py", shell=True)
 
 
 def CSARtoGEOTIFF():
@@ -108,16 +102,6 @@ def TPU(order, Depth):
     TVU_v = round(sqrt(a**2 + (b * Depth)**2),3)
     return(TVU_v, THU_v) ## Return Expected Total Vertical Uncertainty SOUACC and Postional Uncertainty POSACC
 
-##def TransformCoordinates(WKT, Sur):
-##
-##    InCRS = caris.CoordinateReferenceSystem('epsg', '4326')
-##    in_geom = caris.Geometry(InCRS, WKT)
-##
-##    Sur_CRS = caris.CoordinateReferenceSystem('WKT', Sur.wkt_cosys)
-##    Outgeo = in_geom.transform(Sur_CRS)
-##    CRSTransformed = Outgeo.wkt
-##    return(CRSTransformed)
-
 
 class Application(Frame):
 
@@ -134,7 +118,6 @@ class Application(Frame):
         self.Sub_Rep()
         self.app_widgets()
         self.Load_GRID_Par()
-        self.POSPAC_Par()
         #self.Copy_HIPS()
 
 
@@ -152,9 +135,6 @@ class Application(Frame):
 
         ## Convert DOY to JD
         submenu2.add_command(label = "DOY to JD", command = CONV_DOY)
-
-        ## Convert IWLS to CARIS Tide
-        submenu2.add_command(label = "IWLS to CARIS Tide", command = IWLStoHIPSTIDE)
 
         ## Convert CSAR to GEOTIFF
         submenu2.add_command(label = "CSAR Surface to GEOTIFF", command = CSARtoGEOTIFF)
@@ -216,7 +196,6 @@ class Application(Frame):
         RAW_Filedir = filedialog.askdirectory(title='Select Raw Sensor File ' +
                                               'Directory', initialdir=raw)
         self.RAW_F.set(RAW_Filedir)
-        # tip_RAW = ToolTip(self.RAW_f, (self.RAW_F.get()))
 
 
     def Search_HDCS_Data(self):
@@ -229,7 +208,6 @@ class Application(Frame):
         HDCS_Filedir = filedialog.askdirectory(title='Select Proccessing folder' +
                                                'Directory', initialdir=hdcs)
         self.HDCS_D.set(HDCS_Filedir)
-        # tip_HDCS = ToolTip(self.HDCS_d, (self.HDCS_D.get()))
 
 
     def Search_VesselFile(self):
@@ -242,24 +220,22 @@ class Application(Frame):
 
         VESSEL_File = filedialog.askopenfilename(initialdir = V[0],
                                        title = 'Select Vessel File',
-                                       filetypes = (("Vessel Config","*.hvf"),("all files","*.*")))
+                                       filetypes = (("Vessel Config","*.hvf"),("Vessel Config",".*vessel"),("all files","*.*")))
         self.VESSEL_N.set(VESSEL_File)
-        # tip_Vessel = ToolTip(self.VESSEL_n, (self.VESSEL_N.get()))
+        
 
 
     def Search_Aux_Data(self):
         """Allows the user to choose the
         dir with the POS files"""
 
-
         Aux = self.AUX_F.get()
 
         AUX_Filedir = filedialog.askdirectory(title='Select Folder ' +
                                                 'Directory', initialdir=Aux)
         self.AUX_F.set(AUX_Filedir)
-        # tip_AUX_F = ToolTip(self.AUX_f, (self.AUX_F.get()))
         self.POSDIR.set(AUX_Filedir)
-        # tip_POSDir = ToolTip(self.POSDir, (self.POSDIR.get()))
+       
 
 
 
@@ -275,7 +251,6 @@ class Application(Frame):
                                        title = 'Select RMS File',
                                        filetypes = (("RMS","*.out"),("all files","*.*")))
         self.AUX_F2.set(AUX_Filedir)
-        # tip_AUX_F2 = ToolTip(self.AUX_f2, (self.AUX_F2.get()))
 
 
     def Search_Aux_Data3(self):
@@ -291,7 +266,6 @@ class Application(Frame):
                                     title = 'Select SBET File',
                                     filetypes = (("SBET","*.out"),("all files","*.*")))
         self.AUX_F3.set(AUX_Filedir)
-        # tip_AUX_F3 = ToolTip(self.AUX_f3, (self.AUX_F3.get()))
 
 
     def Search_GNSS_Obs(self):
@@ -308,8 +282,6 @@ class Application(Frame):
                                        filetypes = (("Obs","*.*o"),("all files","*.*")))
 
         self.GNSSFile.set(Gnss_File)
-        # tip_GNSSFile = ToolTip(self.GnssFile, (self.GNSSFile.get()))
-
 
     def Search_OUTPUT(self):
         """Allows the user to choose an Output
@@ -319,7 +291,6 @@ class Application(Frame):
         out = self.OUT_F.get()
 
         OUTPUT_Filedir = filedialog.askdirectory(title='Select Output Folder ', initialdir=out)
-        # tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
         self.OUT_F.set(str(OUTPUT_Filedir))
 
 
@@ -392,7 +363,6 @@ class Application(Frame):
                                        filetypes = (("all files","*.*"), ("Text Model File","*.txt"),("CSV","*.csv"), ("XYZ","*.xyz"),
                                                     ("Raster Model File","*.csar")))
         self.M_F.set(Model_File)
-        # tip_MODEL = ToolTip(self.M_f, (self.M_F.get()))
 
 
     def Search_Info_File(self):
@@ -407,7 +377,6 @@ class Application(Frame):
                                        title = 'Select Model Info File',
                                        filetypes = (("Tide Info Files","*.info"),("all files","*.*")))
         self.INFO_F.set(INFO_File)
-        # tip_INFO = ToolTip(self.Info_f, (self.INFO_F.get()))
 
 
     def Search_Grid_Dir(self):
@@ -416,10 +385,8 @@ class Application(Frame):
         Surfaces dir entry box with the selected path"""
 
         grid = self.GRID_DIR.get()
-
         Grid_dir = filedialog.askdirectory(initialdir = grid, title='Select Surface directory ')
         self.GRID_DIR.set(str(Grid_dir))
-        # tip_GRID = ToolTip(self.GRID_dir, (self.GRID_DIR.get()))
 
 
     def Search_CSAR_File(self):
@@ -432,7 +399,6 @@ class Application(Frame):
                                                     ("all files","*.*")))
         CSAR_File = CSAR_File.replace("/", "\\")
         self.CSAR_F.set(CSAR_File)
-        # tip_CSAR_F = ToolTip(self.CSAR_f, (self.CSAR_F.get()))
 
 
     def Search_GEOTIFF_File(self):  ## Not running Code
@@ -446,7 +412,6 @@ class Application(Frame):
                                                     ("all files","*.*")))
         GEOTIFF_File = GEOTIFF_File.replace("/", "\\")
         self.GEOTIFF_F.set(GEOTIFF_File)
-        # tip_GEOTIFF_F = ToolTip(self.GEOTIFF_f, (self.GEOTIFF_F.get())) ## May not need once command line is availible
 
 
     def Search_LINE_File(self):
@@ -461,7 +426,6 @@ class Application(Frame):
                                        filetypes = (("ASCII Text","*.txt"),
                                                     ("all files","*.*")))
         self.LINE_F.set(LINE_File)
-        # tip_LINE_F = ToolTip(self.LINE_f, (self.LINE_F.get()))
 
 
     def Search_SpreadSheet_File(self):
@@ -476,7 +440,6 @@ class Application(Frame):
                                        filetypes = (("Spread Sheet","*.xlsx"),
                                                     ("all files","*.*")))
         self.REP_F.set(REP_File)
-        # tip_REP_F = ToolTip(self.REP_f, (self.REP_F.get()))
 
 
     def Search_SpreadSheet_File2(self):
@@ -491,7 +454,6 @@ class Application(Frame):
                                        filetypes = (("Spread Sheet","*.xlsx"),
                                                     ("all files","*.*")))
         self.WREP_F.set(WREP_File)
-        # tip_WREP_F = ToolTip(self.WREP_f, (self.WREP_F.get()))
 
 
     def Search_VALSRC_Folder(self):
@@ -503,14 +465,14 @@ class Application(Frame):
         VALSRC_Filedir = filedialog.askdirectory(title='Select VALSRC folder' +
                                                'Directory', initialdir=Valsrc)
         self.VALSRC_F.set(VALSRC_Filedir)
-        # tip_HDCS = ToolTip(self.VALSRC_f, (self.VALSRC_F.get()))
+
 
     def Search_DTMFolder(self):
         Valsrc = self.DTM_DIR.get()
         VALSRC_Filedir = filedialog.askdirectory(title='Select VALSRC folder' +
                                                'Directory', initialdir=Valsrc)
         self.DTM_DIR.set(VALSRC_Filedir)
-        # tip_HDCS = ToolTip(self.DTM_dir, (self.DTM_DIR.get()))
+
 
 
     def Search_QC_OUT(self): ## Not running Code
@@ -520,7 +482,6 @@ class Application(Frame):
         OUTPUT_QC = filedialog.askdirectory(title='Select QC Tools Output Folder')
         OUTPUT_QC = OUTPUT_QC.replace("/", "\\")
         self.QC_OUT.set(OUTPUT_QC)
-        # tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
 
 
     def Search_ENC_Dir(self):  ## Not running Code
@@ -530,7 +491,6 @@ class Application(Frame):
         ENC_DIR = filedialog.askdirectory(title='Select QC Tools Output Folder')
         ENC_DIR = ENC_DIR.replace("/", "\\")
         self.ENC_DIR.set(ENC_DIR)
-        # tip_Out = ToolTip(self.ENC_Dir, (self.ENC_DIR.get()))
 
 
     def Search_TrackLines (self):
@@ -558,6 +518,7 @@ class Application(Frame):
         PROJECT = self.PROJECT_n.get() ## Project Name
         VESSEL = self.VESSEL_n.get() ## Vessel Config File
         CRS = self.CRS_op.get() ## Project CRS
+        CRS2 = self.CRS_Import.get() ## Raw File CRS
         JULIAN = self.JULIAN_d.get() ## Julian Day of survey RAW Files
         YEAR = self.Year.get() ## Year of Survey
         OUT = self.OUT_F.get() ## Output folder for Caris Batch cmd Output
@@ -567,7 +528,7 @@ class Application(Frame):
             CONNAV='0'
 
         ## Save General Parameters to Parameters.txt
-        GenPar_List = [RAW, HDCS, PROJECT, VESSEL, CRS, JULIAN, YEAR, CONNAV, OUT,'N/A','N/A','N/A']
+        GenPar_List = [RAW, HDCS, PROJECT, VESSEL, CRS, JULIAN, YEAR, CONNAV, OUT, CRS2,'N/A','N/A']
         Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
         Parameters.iloc[0] = GenPar_List
         Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
@@ -717,7 +678,7 @@ class Application(Frame):
             Heading_DX = self.Heading_DX.get() ## Heading Device
             CONV_SS = self.CONV_SS.get() ## Convert Side Scan
             SSWF = self.SSWF.get() ## Side Scan Weighting Factor
-            SS_NAV = saelf.SS_NAV.get() ## Side Scan Navigation Device
+            SS_NAV = self.SS_NAV.get() ## Side Scan Navigation Device
             SS_HEAD = self.SS_HEAD.get() ## Side Scan Heading Device
             TIME_S = self.TIME_S.get() ## Time Stamps
 
@@ -855,17 +816,6 @@ class Application(Frame):
             Parameters.iloc[8,1] = V_REF2
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
-        ## POSPAC Processing Parameters to Parameters.txt
-        POSDir = self.POSDIR.get()
-        StationFile = self.GNSSFile.get() ## Base Station File
-        StationID = self.STID.get() ## Base Station ID/Name
-        REF_FRAME = self.REF_FRAME.get() ## POSPAC Reference Frame for Proccessing
-
-        POSPAC_List = [POSDir, StationFile, StationID, REF_FRAME,'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A']
-        Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-        Parameters.iloc[13] = POSPAC_List
-        Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
-
         if self.D_R.get() == 1:
             ## Reporting Parameters to Parameters.txt
             Daily = self.REP_F.get() ## Daily Report Spreadsheet
@@ -976,23 +926,6 @@ class Application(Frame):
             self.ND_HOUR.set(ND_HOUR)
             self.H_MERGED2.set(H_MERGE2)
             self.VERT_REF2.set(VERT_R2)
-
-##            ## Sound Speed Profile Editor
-##            self.EditSVP_op = LabelFrame(frame6, text="Edit SVP", foreground="blue")
-##            self.EditSVP_op.grid(row=2, column=0, sticky=W)
-##
-##            self.COORD_F = StringVar()
-##            self.COORD_f = Entry(self.EditSVP_op, width=38, textvariable=self.COORD_F)
-##            self.COORD_text = Label(self.EditSVP_op, text="SVP Coordinate File")
-##            self.COORD_text.grid(row=1, column=0, sticky=W)
-##            self.COORD_f.grid(row=1, column=1, sticky=W)
-##            self.Button_coord = Button(self.EditSVP_op, text="...", height=0,
-##                              command=self.Search_Aux_Data)
-##            self.Button_coord.grid(row=1, column=2, sticky=W, padx=2)
-##
-##
-##            ## ToolTips for SVP
-##            tip_SVP = ToolTip(self.SVP_f, (self.SVP_F.get()))
 
         if self.APPLY_SVP.get()==0:
             try:
@@ -1261,9 +1194,6 @@ class Application(Frame):
             A_F = Parameters.iloc[1,2]
             self.AUX_F.set(A_F)
 
-            ## ToolTips For Applanix Data
-            # tip_AUX = ToolTip(self.AUX_f, str(self.AUX_F.get()))
-
             try:
                 ## Forget the SBET & RMS Options
                 self.SBET_RMS_op.grid_forget()
@@ -1471,10 +1401,6 @@ class Application(Frame):
             A_F3 = Parameters.iloc[1,4]
             self.AUX_F3.set(A_F3)
 
-            ## ToolTips For Applanix Data
-            # tip_AUX2 = ToolTip(self.AUX_f2, str(self.AUX_F2.get()))
-            # tip_AUX3 = ToolTip(self.AUX_f3, str(self.AUX_F3.get()))
-
             try:
                 ## Forget the POSMV Options
                 self.POSMV_op.grid_forget()
@@ -1497,7 +1423,6 @@ class Application(Frame):
 
     def Import_Auxiliary(self):
         """"""
-
         ## Get Default Values from Use Input
         PH = self.split_Project_Name()
         Project_N = PH[0]
@@ -1508,11 +1433,10 @@ class Application(Frame):
         CRS = crs.partition(": ")[2]
         Vessel_F = self.VESSEL_N.get() ## Vessel File
         Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
+        Vessel = path.splitext(Vessel)[0]
         Year = self.Year.get() ## Survey Year
         JD = self.JULIAN_D.get() ## Julian Day
         Out = self.OUT_F.get() ## Processing Window Output Dir
-
         Allow_P = self.ALLOW_P.get() ## Allow Partially Covered Data
         Maximum_Gap = self.MAG.get() ## Maximum Allowable Gap
         AUX_F = self.AUX_F.get() ## AUX Dir
@@ -1664,6 +1588,7 @@ class Application(Frame):
         YEAR = Parameters.iloc[0,6]
         CON_NAV = int(Parameters.iloc[0,7])
         OUT = Parameters.iloc[0,8]
+        CRS2 = Parameters.iloc[0,9]
 
         ##Setting defaults from Parameter file for HIPS Proccessing
         self.RAW_F.set(RAW)
@@ -1675,296 +1600,7 @@ class Application(Frame):
         self.YEAR.set(YEAR)
         self.CONVERT_N.set(CON_NAV)
         self.OUT_F.set(OUT)
-
-        ##ToolTips for HIPS Project Options
-        # tip_RAW = ToolTip(self.RAW_f, (self.RAW_F.get()))
-        # tip_HDCS = ToolTip(self.HDCS_d, (self.HDCS_D.get()))
-        # tip_Vessel = ToolTip(self.VESSEL_n, (self.VESSEL_N.get()))
-        # tip_Out = ToolTip(self.OUT_f, (self.OUT_F.get()))
-
-
-##    def Copy_HIPS(self):
-##
-##        
-##        CopyToHips_ops = LabelFrame(frame11, text="Copy to Hips", foreground="blue")
-##        CopyToHips_ops.grid(row=0, column=0, padx=1, sticky=W)
-##
-##        self.INHIPS = StringVar()
-##        self.Inhips = Entry(CopyToHips_ops, width=38, textvariable=self.INHIPS)
-##        self.Inhips_text = Label(CopyToHips_ops, text="Input Project")
-##        self.Inhips_text.grid(row=1, column=0, sticky=W)
-##        self.Inhips.grid(row=1, column=1, sticky=W)
-##        self.ButtonInhips = Button(CopyToHips_ops, text="...", height=0,
-##                              command=self.Search_TrackLines)
-##        self.ButtonInhips.grid(row=1, column=2, sticky=W, padx=2)
-##
-##        self.OUTHIPS = StringVar()
-##        self.Outhips = Entry(CopyToHips_ops, width=38, textvariable=self.OUTHIPS)
-##        self.Outhips_text = Label(CopyToHips_ops, text="Destination\nProject")
-##        self.Outhips_text.grid(row=2, column=0, sticky=W)
-##        self.Outhips.grid(row=2, column=1, sticky=W)
-##        self.ButtonOuthips = Button(CopyToHips_ops, text="...", height=0,
-##                              command=self.Search_TrackLines)
-##        self.ButtonOuthips.grid(row=2, column=2, sticky=W, padx=2)
-##    
-##        Copy_ToHips_TL = LabelFrame(frame11, text="Trackline Selection", foreground="blue")
-##        Copy_ToHips_TL.grid(row=1, column=0, padx=1, sticky=W)
-##
-##        self.TL_Dir = StringVar()
-##        self.tl_dir = Entry(Copy_ToHips_TL, width=38, textvariable=self.TL_Dir)
-##        self.tl_dir_text = Label(Copy_ToHips_TL, text="TrackLine Directory")
-##        self.tl_dir_text.grid(row=1, column=0, sticky=W)
-##        self.tl_dir.grid(row=1, column=1, sticky=W)
-##        self.ButtonCTH = Button(Copy_ToHips_TL, text="...", height=0,
-##                              command=self.Search_TrackLines)
-##        self.ButtonCTH.grid(row=1, column=2, sticky=W, padx=2)
-##
-##        self.listbox = Listbox(Copy_ToHips_TL, height=25, width=38, selectmode=EXTENDED)
-##        self.listbox.grid(row=2, column=1, sticky=W)
-
-        
-
-##        self.STlat_text = Label(Copy_ToHips, text="Check boxes \n to backup Projects")
-##        self.STlat_text.grid(row=0, column=0, sticky=W)
-
-##        self.CMAIN = IntVar()
-##        self.CMain = Checkbutton(Copy_ToHips, onvalue=1, offvalue=0, variable=self.CMAIN, text= "Copy Main Project")
-##                                    #command=self.TIDES)
-##        self.CMain.grid(row=1, column=0, sticky=W)
-##
-##        self.CSIDE = IntVar()
-##        self.CSide = Checkbutton(Copy_ToHips, onvalue=1, offvalue=0, variable=self.CSIDE, text= "Copy Side Project")
-##                                    #command=self.TIDES)
-##        self.CSide.grid(row=1, column=1, sticky=W)
-##
-##        self.Button_Copyto = Button(Copy_ToHips, text="Run Copyto", height=0)
-##                               #command=self.PosPAC_Processing)
-##        self.Button_Copyto.grid(row=2, column=0, sticky=W, padx=2)
-
-##    def CopytoHIPS(self):
-##
-##        TL_Dir = self.TL_Dir.get()
-##        TL_Dir_list = listdir(TL_Dir)
-##        Tracklines = [self.listbox.get(idx) for idx in self.listbox.curselection()]
-##        InputHIPS = self.INHIPS.get()
-##        OutputHIPS = self.OUTHIPS.get()
-##
-##        if CRS=='EPSG:7912@2010':
-##            CRS2 = 'EPSG:5937'
-##        else:
-##            CRS2 = CRS
-##
-##            with open("CreateHIPSFile.bat", "w") as Import:
-##                Import.write('@ECHO OFF' + '\n')
-##                Import.write('@ECHO Creating HIPS File' + '\n')
-##                Import.write('cd '+ Caris + '\n')
-##                Import.write('carisbatch --run CreateHIPSFile --output-crs ' +
-##                             CRS2 +
-##                             r' file:///' + HDCS_Folder + '/' + HIPSFILE + '/' + HIPSFILE + '.hips' +
-##                             '> ' + Out + '/' + 'CreateHIPSFile.txt')
-##
-##            p = S.Popen(['CreateHIPSFile.bat'])
-##            p.communicate()
-##
-##
-##        with open("CopytoHips.bat", "w") as Import:
-##            Import.write('@ECHO OFF' + '\n')
-##            Import.write('@ECHO Copying Tracklines' + '\n')
-##            Import.write('cd '+ Caris + '\n')
-##            Import.write('carisbatch --run CopyHIPSToHIPS "'file:///' + C:/Users/LegerMi/Documents/CARIS/HIPS and SIPS/Copyt2' +
-##                         '/Copyto.hips?Line=')
-##            i = 1
-##            
-##            for line in tracklines:
-##                if i == lengthTracklines:
-##                    Import.write(line + '" ')
-##                else:
-##                    Import.write(line + '&')
-##                i = i + 1
-##
-##            Import.write('C:/Users/LegerMi/Desktop/DA_PDAP_2020/9XXXXXXX_PDAP_2020/Processed_Data/Kestrel_EM2040C/Kestrel_EM2040C.hips')
-
-        
-
-
-        
-    def POSPAC_Par(self):
-
-        w_E = 45
-
-        pos_pac = LabelFrame(frame10, text="POSPAC Proccesing", foreground="blue")
-        pos_pac.grid(row=0, column=0, padx=1, sticky=W)
-
-        self.POSDIR = StringVar()
-        self.POSDir = Entry(pos_pac, width=w_E, textvariable=self.POSDIR)
-        self.POSDir_text = Label(pos_pac, text="POS File Folder")
-        self.POSDir_text.grid(row=0, column=0, sticky=W)
-        self.POSDir.grid(row=0, column=1, sticky=W)
-        self.Buttonpospac = Button(pos_pac, text="...", height=0,
-                              command=self.Search_Aux_Data)
-        self.Buttonpospac.grid(row=0, column=2, sticky=W, padx=2)
-
-        self.STID = StringVar()
-        self.STid = Entry(pos_pac, width=20, textvariable=self.STID)
-        self.STid_text = Label(pos_pac, text="GNSS Station Name")
-        self.STid_text.grid(row=2, column=0, sticky=W)
-        self.STid.grid(row=2, column=1, sticky=W)
-
-        self.STLAT = StringVar()
-        self.STlat= Entry(pos_pac, width=20, textvariable=self.STLAT)
-        self.STlat_text = Label(pos_pac, text="PPP Lat D-M-S")
-        self.STlat_text.grid(row=3, column=0, sticky=W)
-        self.STlat.grid(row=3, column=1, sticky=W)
-
-        self.STLONG = StringVar()
-        self.STlong= Entry(pos_pac, width=20, textvariable=self.STLONG)
-        self.STlong_text = Label(pos_pac, text="PPP Long D-M-S")
-        self.STlong_text.grid(row=4, column=0, sticky=W)
-        self.STlong.grid(row=4, column=1, sticky=W)
-
-        self.STH = StringVar()
-        self.STh= Entry(pos_pac, width=20, textvariable=self.STH)
-        self.STh_text = Label(pos_pac, text="PPP Height Metres")
-        self.STh_text.grid(row=5, column=0, sticky=W)
-        self.STh.grid(row=5, column=1, sticky=W)
-
-        self.GNSSFile = StringVar()
-        self.GnssFile= Entry(pos_pac, width=w_E, textvariable=self.GNSSFile)
-        self.GnssFile_text = Label(pos_pac, text="GNSS Receiver Observation File")
-        self.GnssFile_text.grid(row=1, column=0, sticky=W)
-        self.GnssFile.grid(row=1, column=1, sticky=W)
-        self.Buttongnss = Button(pos_pac, text="...", height=0,
-                              command=self.Search_GNSS_Obs)
-        self.Buttongnss.grid(row=1, column=2, sticky=W, padx=2)
-
-        self.REF_FRAME = StringVar()
-        ref_frame_op = ['NAD83 (CSRS):Ellipsoid:GRS 1980:Epoch:2010']
-                      #'ITRF 2014: Ellipsoid: ?: Epoch: 2010']
-
-        self.ref_frame_op = ttk.Combobox(pos_pac, values=ref_frame_op, width=42, textvariable=self.REF_FRAME)
-        self.ref_frame_text = Label(pos_pac, text="Corrections/Base Station Reference Frame")
-        self.ref_frame_text.grid(row=6, column=0, sticky=W)
-        self.ref_frame_op.grid(row=6, column=1, sticky=W+E, padx=0)
-
-        self.Button_POSPAC = Button(pos_pac, text="Run POSPAC", height=0,
-                               command=self.PosPAC_Processing)
-        self.Button_POSPAC.grid(row=7, column=0, sticky=W, padx=2)
-
-
-
-        Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-        PDir = Parameters.iloc[13,0]
-        OBSf = Parameters.iloc[13,1]
-        STid = Parameters.iloc[13,2]
-        RefFrame = Parameters.iloc[13,3]
-
-
-        self.POSDIR.set(PDir)
-        self.GNSSFile.set(OBSf)
-        self.STID.set(STid)
-        self.REF_FRAME.set(RefFrame)
-
-
-    def PosPAC_Processing(self):
-
-        POSDir = self.POSDIR.get()
-        StationFile = self.GNSSFile.get()
-        POSFiles = listdir(POSDir)
-        StationID = self.STID.get()
-        LONGDMS = self.STLONG.get()
-        LATDMS = self.STLAT.get()
-        LATDD = DMS_to_DD(LATDMS)
-        LONGDD = DMS_to_DD(LONGDMS)
-        LATRAD = DD_to_Rads(LATDD)
-        LONGRAD = DD_to_Rads(LONGDD)
-        HeightM = self.STH.get()
-
-        REF_FRAME = self.REF_FRAME.get()
-        Output_ref_Datum = REF_FRAME.split(":")[0]
-        print(Output_ref_Datum)
-        Output_Ellipsoid = REF_FRAME.split(":")[2]
-        if Output_ref_Datum == ('NAD83 (CSRS)'):
-            Station_ref_frame = Output_ref_Datum.replace('NAD83 (CSRS)', 'NAD83_CSRS')
-            Station_Ellipsoid =  Output_Ellipsoid.replace('GRS 1980', 'GRS_1980')
-##        elif Output_ref_Datum.get() == ('ITRF 2014'):
-##            Station_ref_frame = Output_ref_Datum.replace('ITRF_2014')
-##            Station_Ellipsoid =  Output_ref_Datum.replace('')
-        Epoch = REF_FRAME.split(":")[4]
-
-
-        PH = self.split_Project_Name()
-        Project_N = PH[0]
-        HIPSFILE = PH[1]
-        JD = self.JULIAN_D.get()
-        Year = self.Year.get()
-        Out = self.OUT_F.get()
-        OutFile = JD + '_' + HIPSFILE + '_SBET'
-
-        POSPACBatch = ('POSPACBatch.txt')
-        tree = ET.parse(POSPACBatch)
-
-        Name = ('JD' + JD + '_' + HIPSFILE)
-        FirstPosFile = POSFiles[0]
-        LastPosFile = POSFiles[-1]
-
-        POSDir = POSDir.replace('/','\\')
-
-        ##Project Settings
-        tree.find('.//Name').text = Name
-        tree.find('.//FirstPosFile').text = (POSDir + '\\' + FirstPosFile)
-        tree.find('.//LastPosFile').text = (POSDir + '\\' + LastPosFile)
-
-        ## GNSS Station Settings
-        tree.find('.//StationID').text = StationID
-        tree.find('.//DataFile').text = StationFile
-        tree.find('.//Frame').text = Station_ref_frame
-        tree.find('.//Bsci/Ellipsoid').text = Station_Ellipsoid
-        tree.find('.//Bsci/Epoch').text = Epoch
-        st_coords = tree.findall('.//Posllh//double')
-        st_coords[0].text = str(LATRAD)
-        st_coords[1].text = str(-1 * (LONGRAD))
-        st_coords[2].text = str(HeightM)
-
-        ## Export Settings
-        tree.find('.//OutputFile').text = OutFile
-        tree.find('.//Export//Ellipsoid').text = Output_Ellipsoid
-        tree.find('.//Export//Datum').text = Output_ref_Datum
-        tree.find('.//Export//TargetEpoch').text = Epoch
-
-        ## Write settings to Pospac Batch
-        tree.write(POSPACBatch)
-
-        ## tree.find('.//AntennaManufacturer).text = AntennaMan
-        ## tree.find('.//AntennaType).text = AntennaType
-        ## tree.find('.//GnssMode).text = GnssMode
-
-
-        data = data2 = " "
-        with open('POSPACBatch.txt') as P:
-            data2 = P.read()
-        with open('1_Header.txt') as H:
-            data = H.read()
-        data += "\n"
-        data += data2
-        with open ('temp.txt', 'w') as Cp:
-            Cp.write(data)
-        with open('temp.txt') as C, open(Name + '.posbat', 'w') as Final:
-            lines = C.readlines()
-            Final.writelines(lines[0:2])
-            Final.writelines(lines[3:])
-        remove('temp.txt')
-
-
-        with open("POSPAC.bat", "w") as Import:
-                Import.write('@ECHO OFF' + '\n')
-                Import.write('@ECHO Running POSPAC' + '\n')
-                Import.write('cd '+ PosPac + '\n')
-                Import.write('PospacBatch -b ' + owd + '/' + Name + '.posbat > ' + Out + '/' + JD + '/' +
-                             '9.POSPACProccessing_' + JD + '_' + Year + '.txt')
-                
-##        p = S.Popen(['POSPAC.bat'])## Doesnt work on DFO Imaged Machines
-##        p.communicate()
-
+        self.CRS_Import.set(CRS2)
 
     def general_hips_options(self):
         """Sets user inputs for Caris Project Parameters"""
@@ -1987,7 +1623,7 @@ class Application(Frame):
         self.Button1.grid(row=0, column=2, sticky=W, padx=2)
 
 
-        ##HDCS_Data Folder Location
+        ## HDCS_Data Folder Location
         self.HDCS_D = StringVar()
         self.HDCS_d = Entry(hips_op, width=w_E, textvariable=self.HDCS_D)
         self.HDCS_text = Label(hips_op, text="Proccessing folder")
@@ -2035,34 +1671,45 @@ class Application(Frame):
                   'WGS84/UTM Zone 21N: EPSG:32621@2010']
 
         self.CRS_op = ttk.Combobox(hips_op, values=crs_op, width=42, textvariable=self.CRS_O)
-        self.CRS_text = Label(hips_op, text="Choose CRS")
+        self.CRS_text = Label(hips_op, text="CRS Of Project")
         self.CRS_text.grid(row=5, column=0, sticky=W)
         self.CRS_op.grid(row=5, column=1, sticky=W+E, padx=0)
+
+           
+        ## Import CRS
+        self.CRS_Import = StringVar()
+        crs_import = ['ITRF2014: EPSG:7912@2010',
+                  'NAD83(CSRS)v6: EPSG:8252@2010']
+
+        self.CRS_pos = ttk.Combobox(hips_op, values=crs_import, width=35, textvariable=self.CRS_Import)
+        self.CRS_pos_text = Label(hips_op, text="CRS Of Raw Files")
+        self.CRS_pos_text.grid(row=6, column=0, sticky=W)
+        self.CRS_pos.grid(row=6, column=1, sticky=W+E, padx=0)
 
         ##Julian Day of RAW
         self.JULIAN_D = StringVar()
         self.JULIAN_d = Entry(hips_op, width=5, textvariable=self.JULIAN_D)
         self.JULIAN_text = Label(hips_op, text="Julian Day")
-        self.JULIAN_text.grid(row=6, column=0, sticky=W)
-        self.JULIAN_d.grid(row=7, column=0, sticky=W)
+        self.JULIAN_text.grid(row=7, column=0, sticky=W)
+        self.JULIAN_d.grid(row=8, column=0, sticky=W)
 
         ##Year of RAW
         self.YEAR = StringVar()
         self.Year = Entry(hips_op, width=5, textvariable=self.YEAR)
         self.Year_text = Label(hips_op, text="Year")
-        self.Year_text.grid(row=6, column=1, sticky=W)
-        self.Year.grid(row=7, column=1, sticky=W)
+        self.Year_text.grid(row=7, column=1, sticky=W)
+        self.Year.grid(row=8, column=1, sticky=W)
 
         ##Covert Navigation
         self.CONVERT_N = IntVar()
         self.CONVERT_n = Checkbutton(hips_op, variable=self.CONVERT_N, text= "Convert Navigation",
                                      state='disabled')
-        self.CONVERT_n.grid(row=8, column=0, sticky=W)
+        self.CONVERT_n.grid(row=9, column=0, sticky=W)
 
         ##Intial Run to Create HIPS File
         self.IntialRun = IntVar()
         self.Intial_Run = Checkbutton(hips_op, variable=self.IntialRun, text= "Intial Run")
-        self.Intial_Run.grid(row=8, column=1, sticky=W)
+        self.Intial_Run.grid(row=9, column=1, sticky=W)
 
         ##Creating Radio Box for Sensor Data Import
         self.Sensor_type = LabelFrame(frame1, text="Sensor Data", foreground="blue")
@@ -2073,7 +1720,6 @@ class Application(Frame):
         self.Stype = Checkbutton(self.Sensor_type, onvalue=1, offvalue=0, variable=self.STYPE, text= "Import RAW Files",
                                     command=self.RAW_Sensor)
         self.Stype.grid(row=0, column=0, sticky=W)
-
 
         self.S_T=IntVar()
 
@@ -2161,22 +1807,7 @@ class Application(Frame):
         self.Merge_Track = Checkbutton(self.GEO_REF, onvalue=1, offvalue=0, variable=self.MERGE_TRACK, text= "Merge Tracklines",
                                        command=self.Loads_MergeTrack)
         self.Merge_Track.grid(row=2, column=2, sticky=W, padx=1)
-##        ##Noise Classifier
-##        N_C = LabelFrame(frame1, text="Sonar Noise Classifier", foreground="blue")
-##        N_C.grid(row=6, column=0, padx=1, sticky=W)
-##
-##        self.Noise_C = IntVar()
-##        self.Noise_c = Checkbutton(N_C, onvalue=1, offvalue=0, variable=self.Noise_C, text= "Classify Noise",
-##                                   command=self.Load_CARIS_MIRA)
-##        self.Noise_c.grid(row=1, column=0, sticky=W)
 
-##        ##Create BS
-##        B_S = LabelFrame(frame1, text="Create BackScatter Mosiac", foreground="blue")
-##        B_S.grid(row=7, column=0, padx=1, sticky=W)
-##
-##        self.BACK_S= IntVar()
-##        self.Back_S = Checkbutton(B_S, onvalue=1, offvalue=0, variable=self.BACK_S, text= "Create BackScatter")
-##        self.Back_S.grid(row=1, column=0, sticky=W)
 
     def SURFACE(self):
         
@@ -2280,7 +1911,6 @@ class Application(Frame):
                 pass
             
 
-
     def RAW_Sensor(self):
 
         if self.STYPE.get()==1:
@@ -2301,8 +1931,7 @@ class Application(Frame):
             self.rb5 = Radiobutton(self.Sensor_type, text= "KONGSBERG\nKMALL", variable=self.S_T,
                         value=5, command=
                         self.Load_RAW_Par).grid(row=1, column=5, sticky=W)
-           
-
+    
         else:
             self.S_T=IntVar()
 
@@ -2322,7 +1951,6 @@ class Application(Frame):
                         value=34, command=
                         self.Load_RAW_Par,state='disabled').grid(row=1, column=5, sticky=W)
             
-
             try:
                 ## Forget R2 Sonic options
                 self.R2_op.grid_forget()
@@ -2349,77 +1977,6 @@ class Application(Frame):
             except:
                 pass
             
-
-        
-    def Load_CARIS_MIRA(self):
-
-        chdir(owd) ##Application Dir
-
-        if self.Noise_C.get()==1:
-
-            ##Creating IMPORT TO HIPS Options
-            self.Mira_op = LabelFrame(frame8, text="Sonar Noise Classifier", foreground="blue")
-            self.Mira_op.grid(row=0, column=0, padx=1, sticky=W)
-
-
-            self.LEVEL_D = StringVar()
-            self.LEVEL_d = Entry(self.Mira_op, width=10, textvariable=self.LEVEL_D, state='disabled')
-            self.LEVEL_d_text = Label(self.Mira_op, text="Level of Detail")
-            self.LEVEL_d_text.grid(row=1, column=0, sticky=W)
-            self.LEVEL_d.grid(row=1, column=1, sticky=W, padx=1)
-
-            self.FILTER_THRES = StringVar()
-            self.FILTER_Thres = Entry(self.Mira_op, width=10, textvariable=self.FILTER_THRES, state='disabled')
-            self.FILTER_Thres_text = Label(self.Mira_op, text="Noise Confidence Filter")
-            self.FILTER_Thres_text.grid(row=2, column=0, sticky=W)
-            self.FILTER_Thres.grid(row=2, column=1, sticky=W, padx=1)
-
-            self.Mira_URL = StringVar()
-            self.Mira_url = Entry(self.Mira_op, width=10, textvariable=self.Mira_URL, state='disabled')
-            self.Mira_url_text = Label(self.Mira_op, text="MIRA URL")
-            self.Mira_url_text.grid(row=3, column=0, sticky=W)
-            self.Mira_url.grid(row=3, column=1, sticky=W, padx=1)
-
-        else:
-            try:
-                ## Forget CARIS Classifier options
-                self.Mira_op.grid_forget()
-            except AttributeError:
-                pass
-
-
-    def SONAR_CLASS(self): ## Not running Code
-
-        D = self.LEVEL_D.get()
-        Thresh = self.FILTER_THRES.get()
-        URL = self.MIRA_URL.get()
-
-        PH = self.split_Project_Name()
-        Project_N = PH[0]
-        HIPSFILE = PH[1]
-
-        HDCS_Folder = self.HDCS_D.get()
-        Vessel_F = self.VESSEL_N.get()
-        Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
-        Year = (self.Year.get())
-        JD = self.JULIAN_D.get()
-        Out = self.OUT_F.get()
-
-
-        with open("Sonar_Classifier.bat", "w") as Import:
-                Import.write('@ECHO OFF' + '\n')
-                Import.write('@ECHO Running CARIS MIRA' + '\n')
-                Import.write('cd '+ Caris + '\n')
-                Import.write('carisbatch --run ClassifyHIPSNoise --level-of-detail ' + D +
-                             ' --mira-url ' + url)
-                if MIRA_Filter == 1:
-                    Import.write(' --noise-confidence-filter-threshold ' + Thresh )
-
-                Import.write(' file:///' + HDCS_Folder + '/' + HIPSFILE + '/' + HIPSFILE + '.hips?Vessel=' + Vessel +
-                             ';Day=' + str(Year) + '-' + str(JD) + ' > ' + Out + '/' + JD + '/' +
-                             '1.Import_To_Hips_ALL_' + JD + '_' + Year + '.txt' + '\n')
-
 
     def Load_RAW_Par(self):
 
@@ -2507,8 +2064,6 @@ class Application(Frame):
             self.Roll_D.set(Roll_D)
             self.SSP_D.set(SSP_D)
 
-            # self.Caris_RAW_Tooltips()
-
             try:
                 ## Forget R2 Sonic options
                 self.R2_op.grid_forget()
@@ -2557,8 +2112,6 @@ class Application(Frame):
             self.D_S.set(DS)
             self.IN_OFF.set(IN_O)
             self.REJ_OFF.set(R_O)
-
-            # self.Caris_RAW_Tooltips()
 
             try:
                 ## Forget Konsberg options
@@ -2785,11 +2338,6 @@ class Application(Frame):
             self.CRS_pos_text = Label(self.KMALL_op, text="GPS Height Device")
             self.CRS_pos_text.grid(row=2, column=0, sticky=W)
             self.CRS_pos.grid(row=2, column=1, sticky=W, padx=0)
-##            self.GPSH_D = StringVar()
-##            self.GPS_h = Entry(self.KMALL_op, width=10, textvariable=self.GPSH_D, state='disabled')
-##            self.GPS_h_text = Label(self.KMALL_op, text="GPS Height Device")
-##            self.GPS_h_text.grid(row=2, column=0, sticky=W)
-##            self.GPS_h.grid(row=2, column=1, sticky=W, padx=1)
 
             ##Heave Device
             self.Heave_D = StringVar()
@@ -2832,8 +2380,6 @@ class Application(Frame):
             self.GPS_t_text = Label(self.KMALL_op, text="GPS Time Stamps")
             self.GPS_t_text.grid(row=9, column=0, sticky=W)
             self.GPS_t.grid(row=9, column=1, sticky=W, padx=1)
-
-            
 
             Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
             NAV_D = Parameters.iloc[16,0]
@@ -2878,19 +2424,17 @@ class Application(Frame):
 
     def IMPORT_TO_HIPS(self):
 
-
         PH = self.split_Project_Name()
         Project_N = PH[0]
         HIPSFILE = PH[1]
-
         HDCS_Folder = self.HDCS_D.get()
         RAW_F = self.RAW_F.get()
         L_R = listdir(RAW_F)
-        crs = self.CRS_O.get()
+        crs = self.CRS_Import.get()
         CRS = crs.partition(": ")[2]
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
+        Vessel = path.splitext(Vessel)[0]
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
         Out = self.OUT_F.get()
@@ -2984,6 +2528,7 @@ class Application(Frame):
                              ' --pitch-device ' + pitch_d + ' --roll-device ' + roll_d +
                              ' --delayed-heave-device ' + delheave_d +
                              ' --gps-timestamps ' + gps_t + ' ')
+                
                 for file in raw_f:
                     Import.write(file + ' ')
                 Import.write(r'file:///' + HDCS_Folder + '/' +  HIPSFILE + '/' + HIPSFILE + '.hips?Vessel=' + Vessel +
@@ -3159,9 +2704,6 @@ class Application(Frame):
             self.W_l_text.grid(row=5, column=0, sticky=W)
             self.W_l.grid(row=5, column=1, sticky=W+E, padx=0)
 
-
-            #self.W_l = Entry(self.GPSTide_op, width=15, textvariable=self.W_L, state='disabled')
-
             self.H_MERGED = StringVar()
             self.H_Merged = Entry(self.GPSTide_op, width=15, textvariable=self.H_MERGED, state='disabled')
             self.H_Merged_text = Label(self.GPSTide_op, text="Heave Type")
@@ -3184,10 +2726,6 @@ class Application(Frame):
             self.C_GPS_ADJ.set(CGPSVA)
             self.W_L.set(WL)
             self.H_MERGED.set(HEAVE_M)
-
-            ##ToolTips for GPS Tides
-            # tip_MODEL = ToolTip(self.M_f, (self.M_F.get()))
-            # tip_INFO = ToolTip(self.Info_f, (self.INFO_F.get()))
 
             try:
                 ## Forget the Observed/Predicted Tides
@@ -3233,9 +2771,6 @@ class Application(Frame):
             self.COMP_Errors.set(COMPE)
             self.H_MERGED.set(HEAVE_M)
 
-            ## ToolTips for Observed/ Predicted Tides
-            # tip_TIDEFILE = ToolTip(self.T_f, (self.T_F.get()))
-
             try:
                 ## Forget the GPS Tide Options
                 self.GPSTide_op.grid_forget()
@@ -3244,7 +2779,6 @@ class Application(Frame):
 
     def Loads_MergeTrack(self):
 
-        
         if self.MERGE_TRACK.get()==1:
              
             self.MERGE_O = LabelFrame(frame8, text="Merge Tracklines", foreground="blue")
@@ -3425,7 +2959,7 @@ class Application(Frame):
 
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
+        Vessel = path.splitext(Vessel)[0]
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
         Out = self.OUT_F.get()
@@ -3552,7 +3086,6 @@ class Application(Frame):
             p = S.check_call("Merge_Tracklines.bat", stdin=None, stdout=None, stderr=None, shell=False)
             
 
-
     def Load_GRID_Par(self):
 
         chdir(owd)
@@ -3648,12 +3181,6 @@ class Application(Frame):
             except AttributeError:
                 pass
 
-        # try:
-        #     ##Tool Tip for GRID Directory
-        #     tip_GRID = ToolTip(self.GRID_dir, str(self.GRID_DIR.get()))
-        # except AttributeError:
-        #     pass
-
 
     def Create_Addto_Hips_Grid(self):
 
@@ -3675,7 +3202,7 @@ class Application(Frame):
             Res_P = Res_List[3]
         elif Res_no > 20 and Res_no <= 30:
             Res_P = Res_List[4]
-        elif ResRes_no[0] > 30 and ResRes_no[0] <= 50:
+        elif Res_no[0] > 30 and Res_no[0] <= 50:
             Res_P = Res_List[5]
         else:
             Res_P = Res_List[6]
@@ -3685,7 +3212,7 @@ class Application(Frame):
         HDCS_Folder = self.HDCS_D.get()
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
+        Vessel = path.splitext(Vessel)[0]
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
         Out = self.OUT_F.get()
@@ -3698,8 +3225,6 @@ class Application(Frame):
         VCRS = 'CUSTOM:69036444' ## CHS PACD Vertical Reference
         G_M = ('CUBE')
         E_R = ('GEOTIFF')
-        
-
 
         if self.GRID.get()==1:
 
@@ -3783,36 +3308,6 @@ class Application(Frame):
         p = S.check_call("Create_Grid.bat", stdin=None, stdout=None, stderr=None, shell=False)
 
 
-    def Create_Backscatter(self): ## Not running Code
-
-        PH = self.split_Project_Name()
-        Project_N = PH[0]
-        HIPSFILE = PH[1]
-
-        Dir_Grid = self.GRID_DIR.get()
-        HDCS_Folder = self.HDCS_D.get()
-        Vessel_F = self.VESSEL_N.get()
-        Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
-        Year = (self.Year.get())
-        JD = self.JULIAN_D.get()
-        Out = self.OUT_F.get()
-        crs = self.CRS_O.get()
-        CRS = crs.partition(": ")[2]
-        SIPS_RES = self.RES.get()
-
-        if self.BACK_S.get()==1:
-
-            with open("Create_BackScatter.bat", "w") as Import:
-                Import.write('@ECHO OFF' + '\n')
-                Import.write('cd '+ Caris + '\n')
-                Import.write('carisbatch --run CreateSIPSMosaic --mosaic-engine SIPS_BACKSCATTER --resolution ' + SIPS_RES +
-                             ' --blending WEIGHTED --output-crs ' + CRS)
-                Import.write(r' file:///' + HDCS_Folder + '/'  + HIPSFILE + '/' + HIPSFILE + '.hips?Vessel=' + Vessel +
-                            ';Day=' + str(Year) + '-' + str(JD) + ' ' +
-                             Dir_Grid + '/BackScatter' + str(JD) + '_' + str(Year) + '.csar' +
-                             ' > ' + Out + '/' + JD + '/' + '7.Create_BS' + JD + '_' + Year + '.txt' + '\n')
-
     def Combine_Caris_Output(self):
 
         Year = (self.Year.get())
@@ -3858,8 +3353,6 @@ class Application(Frame):
                                     command=self.Load_BoundingPoly)
         self.Bp.grid(row=0, column=4, sticky=W)
 
-        
-
 
     def Load_Daily_Reports(self):
 
@@ -3870,16 +3363,6 @@ class Application(Frame):
             self.Daily = LabelFrame(frame9, text="Create Daily Excel Reports", foreground ="blue")
             self.Daily.grid(row=1, column=0, sticky=W)
 
-
-##            self.LINE_F = StringVar()
-##            self.LINE_f = Entry(self.Daily, width=38, textvariable=self.LINE_F)
-##            self.LINE_ftext = Label(self.Daily, text="Caris Line Report File")
-##            self.LINE_ftext.grid(row=1, column=0, sticky=W)
-##            self.LINE_f.grid(row=1, column=1, sticky=W)
-##            self.ButtonLINE_f = Button(self.Daily, text="...", height=0,
-##                                  command=self.Search_LINE_File)
-##            self.ButtonLINE_f.grid(row=1, column=2, sticky=W, padx=2)
-
             self.SVPDir = StringVar()
             self.SVP_Dir = Entry(self.Daily, width=38, textvariable=self.SVPDir)
             self.SVP_Dirtext = Label(self.Daily, text="Julian Day SVP Directory")
@@ -3888,9 +3371,7 @@ class Application(Frame):
             self.ButtonSVP_Dir = Button(self.Daily, text="...", height=0,
                                   command=self.Search_SVP)
             self.ButtonSVP_Dir.grid(row=1, column=2, sticky=W, padx=2)
-            
-
-
+    
             self.REP_F = StringVar()
             self.REP_f = Entry(self.Daily, width=38, textvariable=self.REP_F)
             self.REP_ftext = Label(self.Daily, text="Daily Report Spreadsheet")
@@ -3993,7 +3474,6 @@ class Application(Frame):
                 pass
         
 
-
     def Load_Finalization_Submission(self):
 
         if self.Finalize.get() == 1:
@@ -4017,10 +3497,13 @@ class Application(Frame):
             self.Convert11to4_B = Checkbutton(self.Finalization, onvalue=1, offvalue=0, variable=self.Convert11to4, text= "Convert Surface to Base 4.4")
             self.Convert11to4_B.grid(row=2, column=1, sticky=W)
 
+            self.ISO_Only = IntVar()
+            self.ISO_Only_B = Checkbutton(self.Finalization, onvalue=1, offvalue=0, variable=self.ISO_Only, text= "Create VALSRC Forms Only")
+            self.ISO_Only_B.grid(row=2, column=2, sticky=W)
+
             self.Button_Final = Button(self.Finalization, text="Finalize Surfaces", height=0,
                                command=self.FinalizeQC)
             self.Button_Final.grid(row=20, column=0, sticky=W, padx=2)
-
 
             self.SURSTA = StringVar()
             self.Sursta = Entry(self.Finalization, width=20, textvariable=self.SURSTA)
@@ -4076,7 +3559,6 @@ class Application(Frame):
                    'populated the '
                    'Project, Location, Vessel, and System '
                    'metadata fields in the VALSRC ISO Form.\n'
-                   'boundary polygon projection.\n'
                    '\n2. Ensure to select the Apply Tide '
                    'option and the corrsiponding tide reduction used (GPS or Observed/Predicted '
                    'on the Caris Hips Proccessing '
@@ -4084,8 +3566,8 @@ class Application(Frame):
                    'Tide Model or Tide file '
                    'option in the Apply Tides tab. This will be used to populate '
                    'the Tide reduction field in the VALSRC ISO Form.\n'
-                   '\n3. For regular Atlantic proccessing all surfaces will be Finalized with the Depth band only, and '
-                   'TVU graphs and Caris surface QC reports created in the QC folder.\n'
+                   '\n3. For regular Atlantic proccessing all surfaces will be Finalized with the Depth Uncertainty bands, '
+                   'and TVU graphs and Caris surface QC reports created in the QC folder.\n'
                    '\n4. For Arctic Proccessing the surfaces will be Finalized with the Depth and Uncertainty bands, '
                    'TVU graphs and Caris surface QC reports created in the QC folder, '
                    'surfaces will be transformed from EPSG:5937 into ESPG8999@2010 with PACD set as the vertical reference, '
@@ -4326,7 +3808,9 @@ class Application(Frame):
                 self.V = V.replace(".csar", "")
                 self.Finalize_QC()
         
-        self.Finalize_Surfaces()
+        if self.ISO_Only.get() == 0:
+            self.Finalize_Surfaces()
+        
         self.ISO_1001_07_F02()
 
         if self.ArcFinalize.get() == 1:
@@ -4396,7 +3880,6 @@ class Application(Frame):
   
     def Vectorize_Raster2(self, surface, Out):
 
-        
         Surface = surface.split('.')
         
         hob = (Out + '/' + Surface[0] + '.hob')
@@ -4435,25 +3918,8 @@ class Application(Frame):
 
         features = [i for i in range(len(P))]
         gdr = gpd.GeoDataFrame({'feature': features, 'geometry': omega}, crs=Prj)
-        #gdr.to_crs("EPSG:2961")
         gdr.to_file(SHP[0] + '_FinalBP.shp')
         
-
-##        BP = shapefile.Reader(SHP[0] + '_FinalBP.shp')
-##        g2 = []
-##        for s2 in BP.shapes():
-##            g2.append(pygeoif.geometry.as_shape(s2))
-##        
-##        m2 = pygeoif.MultiPolygon(g2)
-##        BP_wkt = m2.wkt
-
-
-##        SurName = Shpf.split('cvrage(A).shp')
-##        options = cov.Options(open_type=cov.OpenType.WRITE)
-##        raster = cov.Raster(SurName[0] + '.csar', options=options)
-##        BPWKT = TransformCoordinates(BP_wkt, raster)
-##        raster.bounding_polygon = BPWKT
-
 
     def Warping(self, V_F):
  
@@ -4664,22 +4130,13 @@ class Application(Frame):
             Final.write('@ECHO Finalizing Surfaces' + '\n')
             Final.write('cd '+ Caris + '\n')
 
-            if self.ArcFinalize.get() == 1:
-                for VALSRCno in list_VF:
-                    if VALSRCno.endswith(".csar"):
-                        VALSRCno = VALSRCno.replace(".csar", "")
-                        Final.write('carisbatch --run FinalizeRaster --include-band  Depth --include-band Uncertainty '  +
-                                    '--apply-designated --uncertainty-source UNCERT ' +
-                                    V_F +  '/' + VALSRCno + '.csar ' +
-                                    V_F + '/' + self.Finalized_Folder + '/' + VALSRCno + '.csar' +'\n')
-            else:
-                for VALSRCno in list_VF:
-                    if VALSRCno.endswith(".csar"):
-                        VALSRCno = VALSRCno.replace(".csar", "")
-                        Final.write('carisbatch --run FinalizeRaster --include-band  Depth '  +
-                                    '--apply-designated --uncertainty-source UNCERT ' +
-                                    V_F +  '/' + VALSRCno + '.csar ' +
-                                    V_F + '/' + self.Finalized_Folder + '/' + VALSRCno + '.csar' +'\n')
+            for VALSRCno in list_VF:
+                if VALSRCno.endswith(".csar"):
+                    VALSRCno = VALSRCno.replace(".csar", "")
+                    Final.write('carisbatch --run FinalizeRaster --include-band  Depth --include-band Uncertainty '  +
+                                '--apply-designated --uncertainty-source UNCERT ' +
+                                V_F +  '/' + VALSRCno + '.csar ' +
+                                V_F + '/' + self.Finalized_Folder + '/' + VALSRCno + '.csar' +'\n')
 
         p = S.check_call("Finalized.bat", stdin=None, stdout=None, stderr=None, shell=False)
 
@@ -4689,7 +4146,6 @@ class Application(Frame):
         BASE4 = ('C:/Program Files/CARIS/BASE Editor/4.4/bin')
         HIPS11 =  ('C:/Program Files/CARIS/HIPS and SIPS/11.3/bin')
 
-
         Gridding_Method = 'SHOAL'
         V_F = (str(self.VALSRC_F.get()) + '/' + self.Finalized_Folder)
         list_VF = listdir(V_F)
@@ -4698,11 +4154,6 @@ class Application(Frame):
         for file in list_VF:
             if file.endswith(".csar"):
                 File_Name = file.replace(".csar", "")
-
-##                raster = Raster(V_F + '/' + file)
-##                Metadata = raster.iso19139_xml
-##                Csarxml = open(V_F + '/' + File_Name + '.xml', "w")
-##                Csarxml.write(Metadata)
 
                 #Parse the Csar xml
                 xmldoc = minidom.parse(V_F + '/' + str(File_Name) + '.xml')
@@ -4758,7 +4209,7 @@ class Application(Frame):
         CRS = crs.partition(": ")[2]
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
+        Vessel = path.splitext(Vessel)[0]
         Dir_Grid = self.GRID_DIR.get()
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
@@ -4874,7 +4325,6 @@ class Application(Frame):
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
         Out = self.OUT_F.get()
-        ##Line_F = self.LINE_F.get()
         Report_F = self.REP_F.get()
         Weekly_Report = self.WREP_F.get()
         Name = self.WeekNO.get()
@@ -4882,11 +4332,10 @@ class Application(Frame):
         order = self.IHO_ORDER2.get()
         TPUQCFolder = str('TPUQC')
 
-
         t_95_1d = 1.96
         t_95_2d = 2.45
 
-        IHO_orders = [order] #['EXCLUSIVE', 'SPECIAL', '1A', '1B', '2', '3']
+        IHO_orders = [order]
 
         if self.TPUQC.get()==1:
             ASCII_Out = pd.read_csv(Out + '/' + JD + '/' + TPUQCFolder + '/Coverage/' + 'Coverage_' + JD + '_' + Year + '.txt', sep=' ', header=0, low_memory=False)
@@ -4902,8 +4351,6 @@ class Application(Frame):
                 ASCII_Out['Within Allowable TVU'] = np.where(ASCII_Out['Depth TPU'] <= ASCII_Out['Allowable TVU'],
                                                    'yes', 'no')
                 P_W_A_TVU = round(((len(ASCII_Out[ASCII_Out['Within Allowable TVU'] == 'yes'])/len(ASCII_Out)))*100,2)
-
-                #List_TVU.append(P_W_A_TVU)
 
                 Depth_mean = round(ASCII_Out['Depth'].mean(),3)
 
@@ -4922,7 +4369,6 @@ class Application(Frame):
                 ax[0].axvline(Depth_TPU_mean, 0, c='g', label = "MEAN = " + str(Depth_TPU_mean) + 'm')
                 ax[0].axvline(Depth_TPU_min, 0, c='c', label = "MIN = " + str(Depth_TPU_min) + 'm')
                 ax[0].axvline(Depth_95_p, 0, c='m', label = "95% Level = " + str(Depth_95_p) + 'm')
-                #ax[0].axvline(Depth_95_n, 0, c='c', label = "95% Level = " + str(Depth_95_n) + 'm')
                 ax[0].axvline(TPU_v[0], 0, c='k', label = "CHS/IHO = " + str(TPU_v[0]) + 'm')
                 ax[0].legend(loc='upper right')
                 ax[0].set_title('Vertical Accuracy (Ave Depth ' + str(Depth_mean) + ' m)' + '(Order = ' + str(orders) + ')\n')
@@ -4940,7 +4386,6 @@ class Application(Frame):
                 colors = {'yes': 'green', 'no':'red'}
                 ax[1].scatter(ASCII_Out['Depth'],ASCII_Out['Depth TPU'],c=ASCII_Out['Within Allowable TVU'].map(colors))
                 ax[1].plot(Depths, ATPU)
-                #ax[1].legend(loc='upper right')
                 ax[1].set_title('Vertical Accuracy Scatterplot) ' + '(Order = ' + str(orders) + ')\n Red - Outside Allowable Green - Within Allowable(' + str(P_W_A_TVU) + '%)')
                 ax[1].set_xlabel('Depth (m)')
                 ax[1].set_ylabel('Depth Accuracy (m)')
@@ -4997,7 +4442,6 @@ class Application(Frame):
             ax[0].axvline(Depth_TPU_mean, 0, c='g', label = "MEAN = " + str(Depth_TPU_mean) + 'm')
             ax[0].axvline(Depth_TPU_min, 0, c='c', label = "MIN = " + str(Depth_TPU_min) + 'm')
             ax[0].axvline(Depth_95_p, 0, c='m', label = "95% Level = " + str(Depth_95_p) + 'm')
-            #ax[0].axvline(Depth_95_n, 0, c='c', label = "95% Level = " + str(Depth_95_n) + 'm')
             ax[0].axvline(TPU_v[0], 0, c='k', label = "CHS/IHO = " + str(TPU_v[0]) + 'm')
             ax[0].legend(loc='upper right')
             ax[0].set_title('Vertical Accuracy (Ave Depth ' + str(Depth_mean) + ' m)' + '(Order = ' + str(order) + ')\n')
@@ -5010,7 +4454,6 @@ class Application(Frame):
             ax[1].axvline(POS_TPU_mean, 0, c='g', label = "MEAN = " + str(POS_TPU_mean) + 'm')
             ax[1].axvline(POS_TPU_min, 0, c='c', label = "MIN = " + str(POS_TPU_min) + 'm')
             ax[1].axvline(POS_95_p, 0, c='m', label = "95% Level = " + str(POS_95_p) + 'm')
-            #ax[1].axvline(POS_95_n, 0, c='c', label = "95% Level = " + str(POS_95_n) + 'm')
             ax[1].axvline(TPU_v[1], 0, c='k', label = "CHS/IHO = " + str(TPU_v[1]) + 'm')
             ax[1].legend(loc='upper right')
             ax[1].set_title('Horizontal Accuracy' + '(Order = ' + str(order) + ')')
@@ -5018,36 +4461,6 @@ class Application(Frame):
             ax[1].set_ylabel('Percentage (%)')
             plt.tight_layout()
             plt.savefig(str(Out) + '/' + JD + '/' + TPUQCFolder + '/HIPS/' + order + '_Accuracy.png', dpi=200)
-
-
-##        total_t = Line_Report.loc[:,'Total Time']
-##        length = Line_Report.loc[:,'Length']
-##
-##        F_total_t = []
-##        for t in total_t:
-##            s = str(t)
-##            check = re.findall(r'\d\d\D\d\d\D\d\d\d',s)
-##            if check==[]:
-##                t = ('00:00:' + t)
-##                F_total_t.append(t)
-##            else:
-##                t = ('00:' + t)
-##                F_total_t.append(t)
-##        line_count = len(F_total_t)
-##        Line_Report.loc[:,'Total Time'] = F_total_t
-##        total_sec = []
-##        for t in F_total_t:
-##            timeparts = [(s) for s in t.split(':')]
-##            hour_s = int(timeparts[0])*3600
-##            min_s = int(timeparts[1])*60
-##            sec_s = float(timeparts[2])
-##            total_sec.append((min_s + sec_s))
-##        tts = sum(total_sec)
-##        h = int(tts/3600)
-##        m = int((tts - h*3600)/60)
-##        s = round((tts - h*3600 - m*60),3)
-##        Total_Survey_Time = (str(h) + ':' + str(m) + ':' + str(s))
-##        Total_Survey_Length= sum(length)/1000
 
         SVPCount = self.SVP_Count()
         self.Line_Report()
@@ -5068,7 +4481,6 @@ class Application(Frame):
             c = c + 1
         Total_Survey_Area = round(sum(Areas)/(1000*1000),3)
 
-
         myworkbook2 = openpyxl.load_workbook(Report_F)
         cws = myworkbook2.create_sheet(JD)
         worksheet = myworkbook2.get_sheet_by_name(JD)
@@ -5078,20 +4490,6 @@ class Application(Frame):
         for r_idx, row in enumerate(rows, 1):
             for c_idx, value in enumerate(row, 1):
                  worksheet.cell(row=r_idx, column=c_idx, value=value)
-
-##        ## Determine User Order
-##        if order == 'EXCLUSIVE':
-##            PWATVU = List_TVU[0]
-##        elif order == 'SPECIAL':
-##            PWATVU = List_TVU[1]
-##        elif order == '1A':
-##            PWATVU = List_TVU[2]
-##        elif order == '1B':
-##            PWATVU = List_TVU[3]    
-##        elif order == '2':
-##            PWATVU = List_TVU[4]
-##        elif order == '3':
-##            PWATVU = List_TVU[5]
 
         IHO_orders = ['EXCLUSIVE', 'SPECIAL', '1A', '1B', '2', '3']
         worksheet['A'+ str(line_count + 5)] = ('Summary')
@@ -5108,7 +4506,6 @@ class Application(Frame):
         worksheet['B'+ str(line_count + 9)] = (SVPCount)
         worksheet['B'+ str(line_count + 10)] = str(P_W_A_TVU)
 
-        
         if self.TPUQC.get()==2:
             worksheet['B'+ str(line_count + 11)] = str(P_W_A_THU)
         myworkbook2.save(Report_F)
@@ -5123,29 +4520,6 @@ class Application(Frame):
         wb.save(Report_F)
         startfile(Report_F)
 
-##        DayofWeek = date.today().strftime("%A")
-##        T_Date = (str(date.today())).split('-')
-##        if DayofWeek == 'Monday' and New_Sheet== 0:
-##            Space = 8
-##
-##        elif DayofWeek == 'Tuesday' and New_Sheet== 0:
-##            Space = 8*2
-##
-##        elif DayofWeek == 'Wednesday' and New_Sheet== 0:
-##            Space = 8*3
-##
-##        elif DayofWeek == 'Thursday ' and New_Sheet== 0:
-##            Space = 8*4
-##
-##        elif DayofWeek == 'Friday' and New_Sheet== 0:
-##            Space = 8*5
-##
-##        elif DayofWeek == 'Saturday' and New_Sheet== 0:
-##            Space = 8*6
-##
-##        elif DayofWeek == 'Sunday' or New_Sheet== 1:
-##            Space = 0
-##            cws = Weekly.create_sheet(Name)
         Weekly = openpyxl.load_workbook(Weekly_Report)
         worksheet = Weekly.get_sheet_by_name(Name)
         Space = len(worksheet['A']) + 1
@@ -5180,14 +4554,14 @@ class Application(Frame):
             if file.endswith((".asvp",".svp")):
                 svpcounter = svpcounter + 1
         return(svpcounter)
-                                  
-        
+
+
     def Line_Report(self):
 
         HDCS_Folder = self.HDCS_D.get()
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
-        Vessel = re.sub(".hvf","", Vessel)
+        Vessel = path.splitext(Vessel)[0]
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
         Out = self.OUT_F.get()
@@ -5213,7 +4587,6 @@ class Application(Frame):
             dict_new = line.attributes
             new_row = pd.DataFrame([dict_new])
             LR = pd.concat([LR, new_row], ignore_index=True)
-            #LR = LR.append(dict_new, ignore_index=True)
 
         print (LR)
         i2 = 1
@@ -5223,21 +4596,6 @@ class Application(Frame):
         LR['Vessel'] = Vessel
         LR['Day'] = (Year + '-' + JD)
 
-
-##        convert_dict = {'Georeferenced': int,
-##                        'Tpu Computed' : int,
-##                        'Gps Vertical Reference Available' : int,
-##                        'Vertical Reference' : int,
-##                        'Tide Available' : str,
-##                        'Svp Corrected' : str,
-##                        'Outdated' : str,
-##                        'Raw Range' : str,
-##                        'Data Confidence Computed' : str,
-##                        'Del Dft Loaded' : str,
-##                        'Raw Data Path': str
-##                        }
-##
-##        LR = LR.astype(convert_dict)
         LR = LR[LR['Raw Data Path'].str.contains(('.+' +'JD' +  JD + '.+'), regex=True)]
 
         LR['Georeferenced'].mask(LR['Georeferenced'] == 1, 'Yes', inplace=True)
@@ -5382,7 +4740,6 @@ class Application(Frame):
                 folders += len(dirnames)
             Folders.append(folders)
             Files.append(files)
-            ##print ("{:,} files, {:,} folders".format(files, folders))
 
         style = document.styles['Normal']
         font = style.font
@@ -5441,39 +4798,6 @@ class Application(Frame):
 
         p = S.check_call("FindFliers.bat", stdin=None, stdout=None, stderr=None, shell=False)
 
-        
-
-    # def Caris_RAW_Tooltips(self):
-
-    #     RAW_Tooltip = pd.read_csv('Tool_Tips_RAW.txt', delimiter=';', header=None)
-
-    #     R_T = []
-    #     i = 0
-    #     while i !=  len(RAW_Tooltip):
-    #         rt = RAW_Tooltip.iloc[i,1]
-    #         R_T.append(rt)
-    #         i = i + 1
-
-    #     if self.S_T.get()==1:
-    #         RAW_tip1 = ToolTip(self.Nav_d_text, R_T[1])
-    #         RAW_tip2 = ToolTip(self.GPS_h_text, R_T[2])
-    #         RAW_tip3 = ToolTip(self.GPS_t_text, R_T[3])
-    #         RAW_tip4 = ToolTip(self.Heading_d_text, R_T[4])
-    #         RAW_tip5 = ToolTip(self.Heave_d_text, R_T[5])
-    #         RAW_tip6 = ToolTip(self.Pitch_d_text, R_T[6])
-    #         RAW_tip7 = ToolTip(self.Roll_d_text, R_T[7])
-    #         RAW_tip8 = ToolTip(self.SSP_d_text, R_T[8])
-
-    #     elif self.S_T.get()==2:
-    #         RAW_tip1 = ToolTip(self.D_s_text, R_T[12])
-    #         RAW_tip2 = ToolTip(self.IN_off, R_T[13])
-    #         RAW_tip3 = ToolTip(self.REJ_off, R_T[14])
-
-    #     elif self.S_T.get()==3:
-    #         RAW_tip1 = ToolTip(self.D_s_text, R_T[12])
-    #         RAW_tip2 = ToolTip(self.IN_off, R_T[13])
-    #         RAW_tip3 = ToolTip(self.REJ_off, R_T[14])
-
 
     def Help(self):
         return
@@ -5516,18 +4840,9 @@ notebook.grid(row=0, column=0)
 frame8 = ttk.Frame(notebook)
 notebook.add(frame8, text="Merge\nTracklines")
 notebook.grid(row=0, column=0)
-##frame8 = ttk.Frame(notebook)
-##notebook.add(frame8, text="CARIS\nMIRA")
-##notebook.grid(row=0, column=0)
 frame9 = ttk.Frame(notebook)
 notebook.add(frame9, text="Reporting and \nData Submission")
 notebook.grid(row=0, column=0)
-frame10 = ttk.Frame(notebook)
-notebook.add(frame10, text="POSPAC\nProcessing")
-notebook.grid(row=0, column=0)
-##frame11 = ttk.Frame(notebook)
-##notebook.add(frame11, text="Copy\nHips")
-##notebook.grid(row=0, column=0)
 app = Application(root)
 root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
