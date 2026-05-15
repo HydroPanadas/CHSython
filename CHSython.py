@@ -8,7 +8,7 @@ import geopandas as gpd
 import numpy as np
 from tkinter import filedialog
 from os import mkdir, chdir, listdir, path, walk, startfile, getcwd, rename, startfile, remove
-import win32com.client as com
+#import win32com.client as com
 from docx import Document
 from docx.enum.section import WD_ORIENT, WD_SECTION
 import datetime as DATES
@@ -1665,6 +1665,7 @@ class Application(Frame):
         crs_op = ['NAD83(CSRS)/UTM Zone 19N: EPSG:2960@2010',
                   'NAD83(CSRS)/UTM Zone 20N: EPSG:2961@2010',
                   'NAD83(CSRS)/UTM Zone 21N: EPSG:2962@2010',
+                  'WGS84/World Mercator: EPSG:3395@2010',
                   'WGS84/EPSG Canada Polar Stereographic: EPSG:5937@2010',
                   'WGS84/UTM Zone 19N: EPSG:32619@2010',
                   'WGS84/UTM Zone 20N: EPSG:32620@2010',
@@ -3190,8 +3191,8 @@ class Application(Frame):
 
         Res = self.RES.get()
         Res_no = Res.split('m')
-        Res_List = ['2m', '5m', '10m', '20m', '30m', '50m', Res]
-        Res_no = float(Res_no[0])
+        Res_List = ['2m', '5m', '10m', '20m', '30m', '50m', '100m', '200m', '300m', Res]
+        Res_no = int(Res_no[0])
         if Res_no <= 1:
             Res_P = Res_List[0]
         elif Res_no > 1 and Res_no <= 5:
@@ -3202,10 +3203,17 @@ class Application(Frame):
             Res_P = Res_List[3]
         elif Res_no > 20 and Res_no <= 30:
             Res_P = Res_List[4]
-        elif Res_no[0] > 30 and Res_no[0] <= 50:
+        elif Res_no > 30 and Res_no <= 50:
             Res_P = Res_List[5]
-        else:
+        elif Res_no > 50 and Res_no <= 100:
             Res_P = Res_List[6]
+        elif Res_no > 100 and Res_no <= 200:
+            Res_P = Res_List[7]
+        elif Res_no > 200 and Res_no <= 300:
+            Res_P = Res_List[8]               
+        else:
+            Res_P = Res_List[9]
+
 
         IHO = self.IHO_ORDER.get()
         Dir_Grid = self.GRID_DIR.get()
