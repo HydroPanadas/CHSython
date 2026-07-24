@@ -1,16 +1,21 @@
-cd C:\Users\legermi\AppData\Local\Programs\Python\Python35\Scripts
-pip install pandas
-pip install numpy==1.26.4
-pip install pywin32
-pip install pydocx
-pip install docx
-pip install datetime
-pip install openpyxl
-pip install pyshp
-pip install matplotlib
-pip install python-docx
-pip install geopandas
-pip install pygeoif
-pip install shapely
-pip install tkcalendar
+#cd C:\Users\legermi\AppData\Local\Programs\Python\Python311\Scripts
+@ECHO OFF
+py -m pip install pandas
+py -m pip install numpy==1.26.4
+py -m pip install python-docx
+py -m pip install pywin32
+py -m pip install openpyxl
+py -m pip install pyshp
+py -m pip install matplotlib
+py -m pip install geopandas
+py -m pip install pygeoif
+py -m pip install tkcalendar
+py -m pip install shapely
+py -m pip install pyproj
+py -m pip install fiona
+py -m pip install urllib3
+py -m pip install bs4
+py -m pip install requests
+
 pause
+

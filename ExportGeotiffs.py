@@ -1,5 +1,5 @@
 from tkinter import *
-from idlelib.ToolTip import *
+#from idlelib.ToolTip import *
 from tkinter import ttk
 from tkinter import filedialog
 from os import mkdir, chdir, listdir, path, walk, startfile, getcwd, rename
@@ -7,7 +7,7 @@ import subprocess as S
 
 
 owd = getcwd()
-Caris = ('C:/Program Files/CARIS/BASE Editor/5.5/bin')
+Caris = ("C:/Program Files/CARIS/BASE Editor/6.1/bin")
 QGIS = ('')
 GRASS = ('')
 
@@ -30,7 +30,7 @@ class Application(Frame):
 
         Csar_dir= filedialog.askdirectory(initialdir = csar, title='Select Surface directory ')
         self.CSAR_DIR.set(str(Csar_dir))
-        tip_CSAR = ToolTip(self.CSAR_dir, (self.CSAR_DIR.get()))
+        #tip_CSAR = ToolTip(self.CSAR_dir, (self.CSAR_DIR.get()))
 
     def app_widgets(self):
 
@@ -69,19 +69,28 @@ class Application(Frame):
         """ This Function runs processing steps based on user inputs"""
 
         CSARS = self.CSAR_DIR.get()
-        ListCSAR = listdir(CSARS)
-    
 
-        with open("Downsize_Export.bat", "w") as Import:
+        if not CSARS:
+            print("No CSAR folder selected")
+            return
+        
+        ListCSAR = listdir(CSARS)
+
+        with open("Exporttogeotiff.bat", "w") as Import:
                 Import.write('@ECHO OFF' + '\n')
-                Import.write('cd '+ Caris + '\n')
-                Import.write('@ECHO Exporting Geotiffs' + '\n')
+                Import.write('cd /d "'+ Caris + '"\n')
+                Import.write('@ECHO Exporting Geotiffs\n')
                 
                 for file in ListCSAR:
                     if file.endswith(".csar"):
                         File_Name = file.replace(".csar", "")
-                        Import.write('carisbatch --run ExportRaster  --output-format GEOTIFF --include-band Depth ' +
-                                      CSARS + '/' + file +  ' '  + CSARS + '/'  + File_Name + '.tiff' + '\n')
+                        print("Exporting:", file)
+
+                        input_file = CSARS + '/' + file
+                        output_file = CSARS + '/' + File_Name + '.tiff'
+
+                        Import.write(f'carisbatch --run ExportRaster  --output-format GEOTIFF --include-band Depth '
+                                     f'"{input_file}" "{output_file}"\n')
 
         p = S.check_call("Exporttogeotiff.bat", stdin=None, stdout=None, stderr=None, shell=False)
                                     

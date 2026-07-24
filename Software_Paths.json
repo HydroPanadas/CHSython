@@ -1,0 +1,9 @@
+{
+    "paths": {
+        "PYTHON": "C:/Users/LegerMI/AppData/Local/Programs/Python/Python311",
+        "CARIS": "C:/Program Files/CARIS/HIPS and SIPS/12.1/bin",
+        "BASE6": "C:/Program Files/CARIS/BASE Editor/5.5/bin",
+        "QCTOOLS": "C:/Tools/CHSython-main/QCTools.3.11.2",
+        "CATOOLS": "C:/Tools/CHSython-main/CATools.2.5.2"
+    }
+}

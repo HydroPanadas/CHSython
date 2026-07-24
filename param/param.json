@@ -1,0 +1,35 @@
+{
+    "identification": {
+        "version": "2.0.0"
+    },
+    "param": {
+        "definition": {
+            "base": {
+                "identification": {
+                    "id": "param",
+                    "title": "Information sur les valeurs par defaut.",
+                    "version": "2.0.0"
+                }
+            }
+        },
+        "ALPHA_INI": 50000,
+        "ALPHA_THRESHOLD": 4,
+        "MIN_BUFFER_RASTER": 3.0,
+        "MIN_BUFFER_GEOGCS_RASTER": 0.00015,
+        "MIN_BUFFER_PC": 3.0,
+        "MIN_BUFFER_GEOGCS_PC": 0.0003,
+        "FACTOR_BP": 20,
+        "FACTOR_TOL": 0.8,
+        "STYLE_BUFFER": 2,
+        "DEFAULT_DIR": "",
+        "TO_CSAR": true,
+        "TO_SHP": true,
+        "TO_WKT": true,
+        "TO_GML": true,
+        "FILL_HOLE": false,
+        "DELETE_HOLE": true,
+        "FACTOR_AREA": 10,
+        "THEME": "azure",
+        "STYLE": "light"
+    }
+}

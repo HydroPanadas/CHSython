@@ -1,0 +1,22 @@
+BATHY = 'bathy'
+CARIS = 'caris'
+COVERAGE = 'coverage'
+DB = 'db'
+INIT = '__init__.py'
+
+CARIS_API_CONFIG = 'Caris API'
+CARIS_BATCH_BE = 'Caris Batch BASE Editor'
+CARIS_BATCH_HIPS = 'Caris Batch HIPS and SIPS'
+GUI = 'GUI'
+VERSION = 'Version'
+
+BIN = 'bin'
+CARIS_BATCH = 'Caris_batch'
+CARIS_BATCH_EXE = 'carisbatch.exe'
+PYTHON = 'python'
+PYTHON_PATH = 'Python_path'
+
+CONFIG_FILE = 'global_settings.yaml'
+PROGRAMDATA = 'PROGRAMDATA'
+SCHEMA = 'Schema Info'
+TOOLS = 'Outils - SHC'

@@ -1,16 +1,12 @@
 from tkinter import *
-#from idlelib.ToolTip import *
 from tkinter import ttk
 from tkinter import messagebox
-from tkcalendar import Calendar, DateEntry
+from tkcalendar import DateEntry
 import pandas as pd
-import geopandas as gpd
 import numpy as np
 from tkinter import filedialog
 from os import mkdir, chdir, listdir, path, walk, startfile, getcwd, rename, startfile, remove
-#import win32com.client as com
 from docx import Document
-from docx.enum.section import WD_ORIENT, WD_SECTION
 import datetime as DATES
 import subprocess as S
 import matplotlib.pyplot as plt
@@ -18,47 +14,56 @@ from math import sqrt, pi
 import openpyxl
 import re
 import time
-from shapely import wkt
-from shapely.geometry import Polygon
-from shapely.ops import unary_union
 import shapefile
-import pygeoif
 import fileinput
-from xml.dom import minidom
-import xml.etree.cElementTree as ET
 import sys
+import json
+import os
+from datetime import datetime
+from copy import deepcopy
 #sys.path.append('C:/Program Files/CARIS/HIPS and SIPS/11.4/python/3.11')
 sys.path.append('C:/Program Files/CARIS/HIPS and SIPS/12.1/python/3.11')
+sys.path.append(r'C:\Tools\CHSython-main\chs_lib')
 import caris.coverage as cov
 import caris
-from xml.dom import minidom
 import warnings
+import shutil
 warnings.simplefilter("ignore")
 from hips_project import *
-
+import create_bounding_polygon as BP
 
 owd = getcwd()
-Caris = ('C:/Program Files/CARIS/HIPS and SIPS/12.1/bin')
-#Caris = ('C:/Program Files/CARIS/HIPS and SIPS/11.4/bin')
-BASE4 = ('C:/Program Files/CARIS/BASE Editor/4.4/bin')
-BASE5 = ('C:/Program Files/CARIS/BASE Editor/5.5/bin')
-QCTools = ('C:/Users/LegerMi/Downloads/QCTools.3.6.1')
-Python = ('C:/Users/LegerMI/AppData/Local/Programs/Python/Python311')
+
+APPLICATION_PATH = os.path.dirname(__file__)
+
+with open(os.path.join(APPLICATION_PATH, 'Software_Paths.json'), "r") as f:
+    soft_par = json.load(f)
+
+Python = soft_par["paths"]["PYTHON"]
+Caris = soft_par["paths"]["CARIS"]
+CATools = soft_par["paths"]["CATOOLS"]
+QCTools = soft_par["paths"]["QCTOOLS"]
 
 
 def CONV_DOY():
     """ Opens and Run Julian Day Convertor"""
     chdir(owd)
-    p = S.check_call(Python + "/python.exe " + owd + "/JD.py", shell=True)
+    S.check_call(f'"{sys.executable}" -W ignore "{owd}/JD.py"', shell=True)
+    #p = S.check_call(Python + "/python.exe " + owd + "/JD.py", shell=True)
 
 
 def CSARtoGEOTIFF():
     chdir(owd)
-    p = S.check_call(Python + "/python.exe " + owd + "/ExportGeotiffs.py", shell=True)
+    S.check_call(f'"{sys.executable}" -W ignore "{owd}/ExportGeotiffs.py"', shell=True)
+    #p = S.check_call(Python + "/python.exe " + owd + "/ExportGeotiffs.py", shell=True)
 
 def RefractionEditor():
     chdir(owd)
-    p = S.check_call(Python + "/python.exe " + owd + "/Refract.py", shell=True)
+    S.check_call(f'"{sys.executable}" -W ignore "{owd}/Refract.py"', shell=True)
+    #p = S.check_call(Python + "/python.exe " + owd + "/Refract.py", shell=True)
+
+def RetrievalApp():
+    S.check_call(f'"{sys.executable}" -W ignore "{owd}/CHS_Product_Retrieval_App.py"', shell=True)
 
     
 def DMS_to_DD(coords_DMS):
@@ -114,8 +119,8 @@ class Application(Frame):
         self.general_hips_options()
         self.Load_Auxiliary_Par()
         self.Load_Hips_Project_Par()
-        self.Load_SVP_Par()
         self.Sub_Rep()
+        self.Sub_Final()
         self.app_widgets()
         self.Load_GRID_Par()
         #self.Copy_HIPS()
@@ -141,6 +146,9 @@ class Application(Frame):
 
         ## Convert CSAR to Refraction Editor
         submenu2.add_command(label = "Refraction Editor", command = RefractionEditor)
+
+        ## Retrieve Chart Products based off Extent Shapefiles
+        submenu2.add_command(label = "CHS Product Retrieval App", command = RetrievalApp)
 
         ## Save User Parameters
         submenu.add_command(label = "Save Parameters", command = self.Save_Par)
@@ -174,7 +182,7 @@ class Application(Frame):
         if self.A_T.get()==1 or self.A_T.get()==2:
             self.Import_Auxiliary() ## Imports POSMV or SBET Data through Import Applanix Data Proccess
 
-        if (self.T_T.get()==1 or self.T_T.get()==2) or self.COMP_TPU.get()==1 or self.APPLY_SVP.get() or self.MERGE_TRACK.get()==1:
+        if (self.T_T.get()==1 or self.T_T.get()==2) or self.COMP_TPU.get()==1:
             self.GEOREFERENCE_HIPS() ## Runs Georeferencing steps through Georeferenceing Process
 
         if self.GRID.get()==1 or self.GRID.get()==2:
@@ -184,6 +192,10 @@ class Application(Frame):
 
         if self.D_R.get() == 1:
             self.Run_Daily_Report() ## Run Reporting Script for Daily and Weekly Reports
+
+        if self.CATOOLS.get() == 1:
+            print("Running CA Tools")
+            self.Run_CATools_UI() ## Run NAVWARN Processing in CA Tools
 
 
     def Search_RAW_Data(self):
@@ -205,7 +217,7 @@ class Application(Frame):
 
         hdcs = self.HDCS_D.get()
 
-        HDCS_Filedir = filedialog.askdirectory(title='Select Proccessing folder' +
+        HDCS_Filedir = filedialog.askdirectory(title='Select Processing folder' +
                                                'Directory', initialdir=hdcs)
         self.HDCS_D.set(HDCS_Filedir)
 
@@ -235,8 +247,6 @@ class Application(Frame):
                                                 'Directory', initialdir=Aux)
         self.AUX_F.set(AUX_Filedir)
         self.POSDIR.set(AUX_Filedir)
-       
-
 
 
     def Search_Aux_Data2(self):
@@ -268,21 +278,6 @@ class Application(Frame):
         self.AUX_F3.set(AUX_Filedir)
 
 
-    def Search_GNSS_Obs(self):
-        """Allows the user to choose the
-        GNSS observable file for the GPS Station to be used in
-        User Defined Single Base POSPAC Processing"""
-
-        gnssobs = self.GNSSFile.get()
-        gnssobsf = path.split(gnssobs)
-
-
-        Gnss_File = filedialog.askopenfilename(initialdir = gnssobsf[0],
-                                       title = 'Select Observation File',
-                                       filetypes = (("Obs","*.*o"),("all files","*.*")))
-
-        self.GNSSFile.set(Gnss_File)
-
     def Search_OUTPUT(self):
         """Allows the user to choose an Output
         dir for the Caris log information to be saved as text files,
@@ -292,9 +287,9 @@ class Application(Frame):
 
         OUTPUT_Filedir = filedialog.askdirectory(title='Select Output Folder ', initialdir=out)
         self.OUT_F.set(str(OUTPUT_Filedir))
+    
 
-
-    def Search_SVP(self):
+    def Search_SVP(self): #ML Remove
         """Allows the user to choose a SVP dir
         for runing Caris SVP in Georeferencing"""
 
@@ -306,17 +301,6 @@ class Application(Frame):
                                               title='Select SVP File ' +
                                               'Directory')
         self.SVPDir.set(SVP_Filedir)
-        #tip_Out = ToolTip(self.SVPdir,(self.SVPDir.get()))
-
-
-
-        ##Steps for Combining SVP
-        ##Project = self.PROJECT_n.get()
-        ##chdir(SVP_Filedir)
-        ##with open('Combined_SVP.bat', 'w') as Svp_C:
-        ##     Svp_C.write('cd ' + SVP_Filedir + '\n \b')
-        ##     Svp_C.write('copy *.svp ' + str(Project)+ '.svp')
-        ##self.SVP_F.set(str(SVP_Filedir) + '/' + str(Project) + '.svp') ## No longer required as Caris now concatinates files
 
 
     def Search_Sub_dir_file(self):
@@ -347,7 +331,6 @@ class Application(Frame):
                                        title = 'Select Tide File',
                                        filetypes = (("Tide Files","*.tid"),("all files","*.*")))
         self.T_F.set(Tide_File)
-        # tip_MODEL = ToolTip(self.T_f, (self.T_F.get()))
 
 
     def Search_Model_File(self):
@@ -609,7 +592,7 @@ class Application(Frame):
                 NRMSc = 0
 
             if self.POS_GRMS.get()==1:
-                GRMS = 1
+                GRMSc = 1
             else:
                 GRMSc= 0
 
@@ -634,7 +617,7 @@ class Application(Frame):
                 DHRMSc = 0
 
             App_List3 = [Gc, Pc, Rc, GPSHc, DHc, NRMSc, GRMSc, PRMSc, RRMSc, GPSHRMSc, DHRMSc, 'N/A']
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
+            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None, dtype=object)
             Parameters.iloc[12] = App_List3
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
@@ -742,16 +725,20 @@ class Application(Frame):
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
         elif self.T_T.get()==2:
-            ## Observed/ Predicted Tides
-            T_F = self.T_F.get() ## Tide File
-            W_Ave = self.W_Ave.get() ## Wieghted Ave
-            COMP_Errors = self.COMP_Errors.get() ## Compute Errors
+            if not self.T_F.get():
+                pass
 
-            ## Save Tide Parameters to Parameters.txt
-            Tides_List = [T_F, W_Ave, COMP_Errors,'N/A','N/A','N/A','N/A','N/A','N/A','N/A', 'N/A', 'N/A']
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-            Parameters.iloc[6] = Tides_List
-            Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
+            ## Observed/ Predicted Tides
+            else:
+                T_F = self.T_F.get() ## Tide File
+                W_Ave = self.W_Ave.get() ## Wieghted Ave
+                COMP_Errors = self.COMP_Errors.get() ## Compute Errors
+
+                ## Save Tide Parameters to Parameters.txt
+                Tides_List = [T_F, W_Ave, COMP_Errors,'N/A','N/A','N/A','N/A','N/A','N/A','N/A', 'N/A', 'N/A']
+                Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None, dtype=object)
+                Parameters.iloc[6] = Tides_List
+                Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
         ## TPU Parameters
         if self.COMP_TPU.get()==1:
@@ -794,26 +781,11 @@ class Application(Frame):
             Parameters.iloc[10] = GRID_List
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
-        ## SVP Parameters
-        if self.APPLY_SVP.get():
-
-            SVP_F = self.SVP_F.get() ## Directory of SVP
-            PROFILE = self.PROFILE.get() ## Profile Selection Method
-            ND_HOUR = self.ND_HOUR.get() ## Hour for Profile Time
-            H_Merged2 = self.H_MERGED2.get() ## Heave Type
-            V_REF2 = self.VERT_REF2.get() ## Vertical Reference Type
-
-            ## Save SVP Parameters to Parameters.txt
-            SVP_List = [SVP_F, PROFILE, ND_HOUR, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A' , 'N/A' ]
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-            Parameters.iloc[11] = SVP_List
-            Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
-
-            ## Save Merged & SVP Parameters to Parameters.txt
-            Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-            Parameters.iloc[8,0] = H_Merged2
-            Parameters.iloc[8,1] = V_REF2
+        ## CATools Parameters
+        if self.CATOOLS.get()==1:
+            CA_List = [self.CA_algo.get(), self.CA_mode.get(), self.CA_input_mode.get(), self.CA_ENC_var.get(), self.CA_OUT_var.get(), '15.0', '0.3', '10', 'N/A', 'N/A', 'N/A', 'N/A']
+            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None, dtype=object)
+            Parameters.loc[17] = CA_List
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
         if self.D_R.get() == 1:
@@ -822,7 +794,7 @@ class Application(Frame):
             Weekly = self.WREP_F.get() ## Weekly Report Spreadsheet
             Week = self.WeekNO.get() ## Week number/name
             IHOOrder = self.IHO_ORDER2.get() ## IHO Order
-            QC = self.TPUQC.get() ## QC Type (Surface or HIPS)
+            QC = 'Yes' if self.TPUQC.get() == 1 else 'No' ## QC Type (Surface or HIPS)
             
             ## Reporting Parameters to Parameters.txt
             Reporting_List = ['N/A',Daily,Weekly,IHOOrder,Week,QC,'N/A','N/A','N/A','N/A','N/A','N/A']
@@ -855,85 +827,6 @@ class Application(Frame):
         B1 = Button(popup, text="Okay", command = leavemini)
         B1.grid(row=2, column=1)
         popup.mainloop()
-
-
-    def Load_SVP_Par(self):
-        """Loads deafult user input options for SVP Proccessing"""
-
-        chdir(owd) ## Application Dir
-
-        ## Creating SVP Frame and User Input Options
-        if self.APPLY_SVP.get()==1:
-
-            ## Creating SVP Options
-            self.SVP_op = LabelFrame(frame6, text="Apply SVP", foreground="blue")
-            self.SVP_op.grid(row=1, column=0, padx=1, sticky=W)
-
-            ## Sound Speed Profile Directory
-            self.SVP_F = StringVar()
-            self.SVP_f = Entry(self.SVP_op, width=38, textvariable=self.SVP_F)
-            self.SVP_text = Label(self.SVP_op, text="SVP Dir")
-            self.SVP_text.grid(row=1, column=0, sticky=W)
-            self.SVP_f.grid(row=1, column=1, sticky=W)
-
-            ## Sound Speed Profile Selection Method
-            self.PROFILE = StringVar()
-            self.Profile = Entry(self.SVP_op, width=32, textvariable=self.PROFILE, state='disabled')
-            self.Profile_text = Label(self.SVP_op, text='Profile Selection\nMethod')
-            self.Profile_text.grid(row=3, column=0, sticky=W)
-            self.Profile.grid(row=3, column=1, sticky=W)
-
-            ## Sound Speed Profile Time
-            self.ND_HOUR = StringVar()
-            self.ND_Hour = Entry(self.SVP_op, width=3, textvariable=self.ND_HOUR)
-            self.ND_Hour_text = Label(self.SVP_op, text='Nearest Distance\nHours')
-            self.ND_Hour_text.grid(row=4, column=0, sticky=W)
-            self.ND_Hour.grid(row=4, column=1, sticky=W)
-
-            ## Heave Type for Merge
-            self.H_MERGED2 = StringVar()
-            self.H_Merged2 = Entry(self.SVP_op, width=15, textvariable=self.H_MERGED2, state='disabled')
-            self.H_Merged_text2 = Label(self.SVP_op, text="Heave Type")
-            self.H_Merged_text2.grid(row=5, column=0, sticky=W)
-            self.H_Merged2.grid(row=5, column=1, sticky=W, padx=1)
-
-            ## Vertical Reference Type
-            self.VERT_REF2 = StringVar()
-            vert_ref2 = ['NONE',
-                        'GPS',
-                        'TIDE']
-
-            self.VREF_op2 = ttk.Combobox(self.SVP_op, values=vert_ref2, width=7, textvariable=self.VERT_REF2)
-            self.VREF_text2 = Label(self.SVP_op, text="Choose Vertical Reference")
-            self.VREF_text2.grid(row=2, column=0, sticky=W)
-            self.VREF_op2.grid(row=2, column=1, sticky=W+E, padx=0)
-
-            self.Button16 = Button(self.SVP_op, text="...", height=0,
-                               command=self.Search_and_Combine_SVP)
-            self.Button16.grid(row=1, column=2, sticky=W, padx=2)
-
-            ## Reading defaults or user saved inputs for SVP
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-            SVP_F = Parameters.iloc[11,0]
-            PROFILE = Parameters.iloc[11,1]
-            ND_HOUR = int(Parameters.iloc[11,2])
-            H_MERGE2 = Parameters.iloc[8,0]
-            VERT_R2 = Parameters.iloc[8,1]
-
-            ## Setting defaults from Parameter file for POSMV
-            self.SVP_F.set(SVP_F)
-            self.PROFILE.set(PROFILE)
-            self.ND_HOUR.set(ND_HOUR)
-            self.H_MERGED2.set(H_MERGE2)
-            self.VERT_REF2.set(VERT_R2)
-
-        if self.APPLY_SVP.get()==0:
-            try:
-                ## Forget the SVP Options
-                ##self.EditSVP_op.grid_forget()
-                self.SVP_op.grid_forget()
-            except AttributeError:
-                pass
 
 
     def Load_Auxiliary_Par(self):
@@ -1415,10 +1308,25 @@ class Application(Frame):
         1. Projectno_Location_Year 2. Vessel_System"""
 
         Project_N = self.PROJECT_n.get()
-        P_split =  Project_N.split('_')
-        Project_N = P_split[0] + ('_') + P_split[1] + ('_') + P_split[2]
-        HIPSFILE = P_split[3] + ('_') + P_split[4]
-        return(Project_N, HIPSFILE, P_split)
+
+        if not Project_N:
+            messagebox.showerror("Error", "Project name is empty.")
+            return None, None, None
+        
+        P_split = Project_N.split('_')
+
+        if len(P_split) < 5:
+            messagebox.showerror("Error", f"Invalid project name:\n\n{Project_N}\n\nExpected format:\nProject_Location_Year_Vessel_System")
+            return None, None, None
+        
+        try:
+            Project = "_".join(P_split[:3])
+            HIPSFILE = "_".join(P_split[3:5])
+            return Project, HIPSFILE, P_split
+        
+        except Exception as e:
+            messagebox.showerror("Error", f"Unexpected error:\n{e}")
+            return None, None, None
 
 
     def Import_Auxiliary(self):
@@ -1626,7 +1534,7 @@ class Application(Frame):
         ## HDCS_Data Folder Location
         self.HDCS_D = StringVar()
         self.HDCS_d = Entry(hips_op, width=w_E, textvariable=self.HDCS_D)
-        self.HDCS_text = Label(hips_op, text="Proccessing folder")
+        self.HDCS_text = Label(hips_op, text="Processing folder")
         self.HDCS_text.grid(row=1, column=0, sticky=W)
         self.HDCS_d.grid(row=1, column=1, sticky=W)
         self.Button2 = Button(hips_op, text="...", height=0,
@@ -1780,12 +1688,6 @@ class Application(Frame):
                                     command=self.Load_TPU_Par)
         self.Comp_TPU.grid(row=2, column=0, sticky=W)
 
-        ##Apply SVP
-        self.APPLY_SVP = IntVar()
-        self.Apply_SVP = Checkbutton(self.GEO_REF, onvalue=1, offvalue=0, variable=self.APPLY_SVP, text= "Apply SVP",
-                                    command=self.Load_SVP_Par)
-        self.Apply_SVP.grid(row=2, column=1, sticky=W, padx=1)
-
         ##Create/Add to HIPS Grid
         self.H_GRID = LabelFrame(frame1, text="HIPS Coverage (Surface Creation)", foreground="blue")
         self.H_GRID.grid(row=5, column=0, padx=1, sticky=W)
@@ -1803,11 +1705,14 @@ class Application(Frame):
                     value=2, command=
                     self.Load_GRID_Par, state='disabled').grid(row=1, column=2, sticky=W, padx=1)
 
-        ##Merge Tracklines
-        self.MERGE_TRACK = IntVar()
-        self.Merge_Track = Checkbutton(self.GEO_REF, onvalue=1, offvalue=0, variable=self.MERGE_TRACK, text= "Merge Tracklines",
-                                       command=self.Loads_MergeTrack)
-        self.Merge_Track.grid(row=2, column=2, sticky=W, padx=1)
+        ##Create CA Tools Option
+        self.CATOOLS_frame = LabelFrame(frame1, text="CA Tools", foreground="blue")
+        self.CATOOLS_frame.grid(row=6, column=0, padx=1, sticky=W)
+
+        ##Creating CATools Checkbox
+        self.CATOOLS = IntVar()
+        self.CATOOLS_cb = Checkbutton(self.CATOOLS_frame, text="Run CA Tools", variable=self.CATOOLS, command=self.Load_CATOOLS_Par)
+        self.CATOOLS_cb.grid(row=0, column=0, sticky=W)
 
 
     def SURFACE(self):
@@ -2778,43 +2683,6 @@ class Application(Frame):
             except AttributeError:
                 pass
 
-    def Loads_MergeTrack(self):
-
-        if self.MERGE_TRACK.get()==1:
-             
-            self.MERGE_O = LabelFrame(frame8, text="Merge Tracklines", foreground="blue")
-            self.MERGE_O.grid(row=1, column=0, sticky=N+W)
-
-            self.H_MERGED = StringVar()
-            self.H_Merged = Entry(self.MERGE_O, width=20, textvariable=self.H_MERGED, state='disabled')
-            self.H_Merged_text = Label(self.MERGE_O, text="Heave Type")
-            self.H_Merged_text.grid(row=0, column=0, sticky=W)
-            self.H_Merged.grid(row=0, column=1, sticky=W, padx=1)
-
-            self.VERT_REF = StringVar()
-            vert_ref = ['NONE',
-                        'GPS',
-                        'TIDE']
-
-            self.VREF_op = ttk.Combobox(self.MERGE_O, values=vert_ref, width=7, textvariable=self.VERT_REF)
-            self.VREF_text = Label(self.MERGE_O, text="Choose Vertical Reference")
-            self.VREF_text.grid(row=1, column=0, sticky=W)
-            self.VREF_op.grid(row=1, column=1, sticky=W+E, padx=0)
-
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
-            HEAVE_M = Parameters.iloc[8,0]
-            VERT_R = Parameters.iloc[8,1]
-
-            self.H_MERGED.set(HEAVE_M)
-            self.VERT_REF.set(VERT_R)
-
-        if self.MERGE_TRACK.get()==0:
-            try:
-                ## Forget Merge Options
-                self.MERGE_O.grid_forget()
-            except AttributeError:
-                pass
-
 
     def Load_TPU_Par(self):
 
@@ -3049,42 +2917,6 @@ class Application(Frame):
                             '4.Compute_TPU_' + JD + '_' + Year + '.txt' + '\n')
 
             p = S.check_call("Compute_TPU.bat", stdin=None, stdout=None, stderr=None, shell=False)
-
-        if self.APPLY_SVP.get()==1:
-            SVP_F = self.SVP_F.get()
-            PROFILE = self.PROFILE.get()
-            ND_HOUR = self.ND_HOUR.get()
-            Heave_M2 = self.H_MERGED2.get()
-            Vert_Ref2 = self.VERT_REF2.get()
-
-            with open("Import_SVP.bat", "w") as Import:
-                Import.write('@ECHO OFF' + '\n')
-                Import.write('@ECHO Applying SVP' + '\n')
-                Import.write('cd '+ Caris + '\n')
-                Import.write('carisbatch --run GeoreferenceHIPSBathymetry --vertical-datum-reference ' + str(Vert_Ref2) +
-                             ' --svp ' + SVP_F + ' --heave-source ' + Heave_M2 +
-                             ' --compute-svc --profile-selection-method ' + PROFILE +
-                             ' --nearest-distance-hours ' + ND_HOUR + ' --ssp')
-                Import.write(r' file:///' + HDCS_Folder + '/'  + HIPSFILE + '/' + HIPSFILE + '.hips?Vessel=' + Vessel +
-                            ';Day=' + str(Year) + '-' + str(JD) + ' > ' + Out + '/' + JD + '/' +
-                            '5.Import_SVP_' + JD + '_' + Year + '.txt' + '\n')
-
-            p = S.check_call("Import_SVP.bat", stdin=None, stdout=None, stderr=None, shell=False)
-
-        if self.MERGE_TRACK.get()==1:
-            Heave_M = self.H_MERGED.get()
-            Vert_Ref = self.VERT_REF.get()
-            with open("Merge_Tracklines.bat", "w") as Import:
-                Import.write('@ECHO OFF' + '\n')
-                Import.write('@ECHO Merging Tracklines' + '\n')
-                Import.write('cd '+ Caris + '\n')
-                Import.write('carisbatch --run GeoreferenceHIPSBathymetry --vertical-datum-reference ' + str(Vert_Ref) +
-                             ' --heave-source ' + Heave_M)
-                Import.write(r' file:///' + HDCS_Folder + '/'  + HIPSFILE + '/' + HIPSFILE + '.hips?Vessel=' + Vessel +
-                            ';Day=' + str(Year) + '-' + str(JD) + ' > ' + Out + '/' + JD + '/' +
-                            '7.Merge_Tracklines_' + JD + '_' + Year + '.txt' + '\n')
-
-            p = S.check_call("Merge_Tracklines.bat", stdin=None, stdout=None, stderr=None, shell=False)
             
 
     def Load_GRID_Par(self):
@@ -3186,34 +3018,38 @@ class Application(Frame):
     def Create_Addto_Hips_Grid(self):
 
         PH = self.split_Project_Name()
+
+        if PH[0] is None:
+            return
+        
         Project_N = PH[0]
         HIPSFILE = PH[1]
 
         Res = self.RES.get()
-        Res_no = Res.split('m')
+        Res = str(Res).strip()
+        
+        try:
+            if not Res.endswith('m'):
+                Res = Res + 'm'
+            
+            Res_no = float(Res.replace('m', ''))
+        
+        except ValueError:
+            messagebox.showerror("Error", f"Invalid resolution value: '{Res}'\nExpected format: e.g. 10m")
+            return
+        
         Res_List = ['2m', '5m', '10m', '20m', '30m', '50m', '100m', '200m', '300m', Res]
-        Res_no = int(Res_no[0])
-        if Res_no <= 1:
-            Res_P = Res_List[0]
-        elif Res_no > 1 and Res_no <= 5:
-            Res_P = Res_List[1]
-        elif Res_no > 5 and Res_no <= 10:
-            Res_P = Res_List[2]
-        elif Res_no > 10 and Res_no <= 20:
-            Res_P = Res_List[3]
-        elif Res_no > 20 and Res_no <= 30:
-            Res_P = Res_List[4]
-        elif Res_no > 30 and Res_no <= 50:
-            Res_P = Res_List[5]
-        elif Res_no > 50 and Res_no <= 100:
-            Res_P = Res_List[6]
-        elif Res_no > 100 and Res_no <= 200:
-            Res_P = Res_List[7]
-        elif Res_no > 200 and Res_no <= 300:
-            Res_P = Res_List[8]               
-        else:
-            Res_P = Res_List[9]
+        thresholds = [1, 5, 10, 20, 30, 50, 100, 200, 300]
 
+        Res_P = None
+
+        for i, limit in enumerate(thresholds):
+            if Res_no <= limit:
+                Res_P = Res_List[i]
+                break
+        
+        if Res_P is None:
+            Res_P = Res_List[-1]
 
         IHO = self.IHO_ORDER.get()
         Dir_Grid = self.GRID_DIR.get()
@@ -3224,8 +3060,9 @@ class Application(Frame):
         Year = (self.Year.get())
         JD = self.JULIAN_D.get()
         Out = self.OUT_F.get()
+        os.makedirs(os.path.join(Out, str(JD)), exist_ok=True)
         crs = self.CRS_O.get()
-        CRS = crs.partition(": ")[2]
+        CRS = crs.partition(": ")[-1] if ": " in crs else crs
         if CRS=='EPSG:7912@2010':
             CRS2 = 'EPSG:5937'
         else:
@@ -3341,25 +3178,617 @@ class Application(Frame):
                                command=self.Load_Daily_Reports)
         self.D_r.grid(row=0, column=0, sticky=W)
 
-        self.Finalize = IntVar()
-        self.Finalize_t = Checkbutton(self.sub_op, onvalue=1, offvalue=0, variable=self.Finalize, text="Finalization and Submission",
-                                      command=self.Load_Finalization_Submission)
-        self.Finalize_t.grid(row=0, column=1, sticky=W)
-
-        self.HDC_F = IntVar()
-        self.HDC_f = Checkbutton(self.sub_op, onvalue=1, offvalue=0, variable=self.HDC_F, text= "HDC ISO Submission Form",
-                                    command=self.Load_ATL_SUB_ISO)
-        self.HDC_f.grid(row=0, column=2, sticky=W)
-
         self.RUN_FF = IntVar()
         self.RUN_ff = Checkbutton(self.sub_op, onvalue=1, offvalue=0, variable=self.RUN_FF, text= "Flier Finder",
                                     command=self.Load_FlierFinder)
-        self.RUN_ff.grid(row=0, column=3, sticky=W)
+        self.RUN_ff.grid(row=0, column=1, sticky=W)
+
+    
+    def Sub_Final(self):
+
+        chdir(owd)
+
+        self.sub_final = LabelFrame(frame10, text="Finalization", foreground="blue")
+        self.sub_final.grid(row=0, column=0, sticky=W)
+
+        self.Finalize = IntVar()
+        self.Finalize_t = Checkbutton(self.sub_final, onvalue=1, offvalue=0, variable=self.Finalize, text="Finalize Surfaces",
+                                      command=self.Load_Finalization_Submission)
+        self.Finalize_t.grid(row=0, column=0, sticky=W)
+
+        self.HDC_F = IntVar()
+        self.HDC_f = Checkbutton(self.sub_final, onvalue=1, offvalue=0, variable=self.HDC_F, text= "HDC ISO Submission Form",
+                                    command=self.Load_ATL_SUB_ISO)
+        self.HDC_f.grid(row=0, column=1, sticky=W)
+
+        self.SOUACC_F = IntVar()
+        self.SOUACC_cb = Checkbutton(self.sub_final, onvalue=1, offvalue=0, variable=self.SOUACC_F, text="SOUACC", command=self.Load_SOUACC)
+        self.SOUACC_cb.grid(row=0, column=2, sticky=W)
 
         self.BP = IntVar()
-        self.Bp = Checkbutton(self.sub_op, onvalue=1, offvalue=0, variable=self.BP, text= "Bounding Polygon",
+        self.Bp = Checkbutton(self.sub_final, onvalue=1, offvalue=0, variable=self.BP, text= "Bounding Polygon",
                                     command=self.Load_BoundingPoly)
-        self.Bp.grid(row=0, column=4, sticky=W)
+        self.Bp.grid(row=0, column=3, sticky=W)
+
+
+    def Load_CATOOLS_Par(self):
+
+        if self.CATOOLS.get() == 1:
+
+            self.CATOOLS_op = LabelFrame(frame8, text="Find NAVWARNS", foreground="blue")
+            self.CATOOLS_op.grid(row=0, column=0, sticky=W)
+
+            self.CA_algo = StringVar()
+            self.CA_algo.set("POINT_ADDITIVE_v2")
+            Label(self.CATOOLS_op, text="Sounding Selection Algorithm").grid(row=0, column=0, sticky=W)
+            ttk.Combobox(self.CATOOLS_op, textvariable=self.CA_algo, values=["POINT_ADDITIVE_v2", "MOVING_WINDOW_v2"], state="readonly").grid(row=0, column=1, sticky=W)
+
+            self.CA_mode = StringVar()
+            self.CA_mode.set("single")
+            Label(self.CATOOLS_op, text="DTM Mode").grid(row=1, column=0, sticky=W)
+            Radiobutton(self.CATOOLS_op, text="Single Surface", variable=self.CA_mode, value="single").grid(row=1, column=1, sticky=W)
+            Radiobutton(self.CATOOLS_op, text="Multiple Surfaces", variable=self.CA_mode, value="multi").grid(row=2, column=1, sticky=W)
+
+            self.CA_input_mode = StringVar()
+            self.CA_input_mode.set("auto")
+            Label(self.CATOOLS_op, text="Surface Source").grid(row=3, column=0, sticky=W)
+            Radiobutton(self.CATOOLS_op, text="Use Generated Surfaces", variable=self.CA_input_mode, value="auto", command=self.Toggle_CA_Input_Mode).grid(row=3, column=1, sticky=W)
+            Radiobutton(self.CATOOLS_op, text="Use Custom Surfaces", variable=self.CA_input_mode, value="manual", command=self.Toggle_CA_Input_Mode).grid(row=3, column=2, sticky=W)
+
+            self.CA_DTM_var = StringVar()
+            Label(self.CATOOLS_op, text="CSAR Folder").grid(row=4, column=0, sticky=W)
+            self.CA_DTM_entry = Entry(self.CATOOLS_op, width=35, textvariable=self.CA_DTM_var)
+            self.CA_DTM_entry.grid(row=4, column=1, sticky=W)
+            self.CA_DTM_button = Button(self.CATOOLS_op, text="...", command=self.CA_DTM_Selection)
+            self.CA_DTM_button.grid(row=4, column=2, sticky=W, padx=10)
+
+            self.CA_ENC_var = StringVar()
+            Label(self.CATOOLS_op, text="ENC Folder").grid(row=5, column=0, sticky=W)
+            Entry(self.CATOOLS_op, width=35, textvariable=self.CA_ENC_var).grid(row=5, column=1, sticky=W)
+            Button(self.CATOOLS_op, text="...", command=self.CA_ENC_Selection).grid(row=5, column=2, sticky=W, padx=10)
+
+            self.CA_OUT_var = StringVar()
+            Label(self.CATOOLS_op, text="Output Folder").grid(row=6, column=0, sticky=W)
+            Entry(self.CATOOLS_op, width=35, textvariable=self.CA_OUT_var).grid(row=6, column=1, sticky=W)
+            Button(self.CATOOLS_op, text="...", command=self.CA_OUT_Selection).grid(row=6, column=2, sticky=W, padx=10)
+
+            self.CA_progress = ttk.Progressbar(self.CATOOLS_op, orient=HORIZONTAL, length=300, mode='determinate')
+            self.CA_progress.grid(row=7, column=0, columnspan=3, padx=5, pady=5, sticky=EW)
+            self.progress_label = Label(self.CATOOLS_op, text="Idle")
+            self.progress_label.grid(row=8, column=0, columnspan=3, pady=(0,5))
+
+            Button(self.CATOOLS_op, text="Run CA Tools", command=self.Run_CATools_UI).grid(row=9, column=0, columnspan=3, pady=5)
+
+            self.Toggle_CA_Input_Mode()
+
+        else:
+            try:
+                self.CATOOLS_op.grid_forget()
+            except AttributeError:
+                pass
+        
+    def CA_ENC_Selection(self):
+
+        enc_folder = filedialog.askdirectory(title="Select ENC Folder")
+
+        if not enc_folder:
+            print("No ENC folder selected.")
+            return
+        
+        self.CA_ENC_var.set(enc_folder)
+        
+        self.ENC_paths = []
+
+        for root, dirs, files in os.walk(enc_folder):
+            for f in files:
+                if f.lower().endswith(".000"):
+                    full_path = os.path.join(root, f)
+                    self.ENC_paths.append(full_path)
+
+
+    def CA_DTM_Selection(self):
+
+        mode = self.CA_mode.get()
+
+        if mode == "single":
+            folder = filedialog.askdirectory(title="Select Folder of CSAR Files")
+            if folder:
+                self.dtms = [folder]
+                self.CA_DTM_var.set(folder)
+        else:
+            folder = filedialog.askdirectory(title="Select Folder of CSAR Files")
+            if folder:
+                self.dtms = [folder]
+                self.CA_DTM_var.set(folder)
+
+        #filetypes = [("DTM", "*.bag *.tif *.tiff"),
+                     #("all files", "*.*")]
+        
+        #mode = self.CA_mode.get()
+
+        #if mode == "single":
+            #dtm = filedialog.askopenfilename(title="Select DTM", filetypes=filetypes)
+            #if dtm:
+                #self.dtms = [dtm]
+                #self.CA_DTM_var.set(dtm)
+        #else:
+            #dtms = filedialog.askopenfilenames(title="Select Multiple DTMs", filetypes=filetypes)
+            #if dtms:
+                #self.dtms = list(dtms)
+                #display_text = "; ".join(dtms)
+                #self.CA_DTM_var.set(display_text)
+
+    
+    def CA_OUT_Selection(self):
+
+        out_folder = filedialog.askdirectory(title="Select Output Folder")
+
+        if not out_folder:
+            print("No output folder selected.")
+            return
+        
+        self.CA_OUT_var.set(out_folder)
+
+    
+    def Run_CATools(self):
+
+        if not hasattr(self, "ENC_paths") or not self.ENC_paths:
+            print("No ENC files selected.")
+            return
+
+        if not hasattr(self, "dtms") or not self.dtms:
+            print("No DTM selected.")
+            return
+
+        algo_flag = self.CA_algo.get()
+        
+        #dtms = self.dtms
+        if self.CA_input_mode.get() == "manual":
+            csar_folder = self.dtms[0]
+
+            geotiff_list = []
+
+            with open("CSAR_to_TIFF.bat", "w") as conv:
+                conv.write('@ECHO OFF\n')
+                conv.write('cd /d "' + Caris + '"\n')
+
+                for root, dirs, files in os.walk(csar_folder):
+                    for f in files:
+                        if f.lower().endswith(".csar"):
+                            csar_path = os.path.join(root, f)
+                            tiff_path = os.path.splitext(csar_path)[0] + ".tiff"
+                            conv.write(
+                                f'carisbatch --run ExportRaster --output-format GEOTIFF '
+                                f'--include-band Depth "{csar_path}" "{tiff_path}"\n')
+                            geotiff_list.append(tiff_path)
+            if not geotiff_list:
+                print("No CSAR files found.")
+                return
+            
+            S.call("CSAR_to_TIFF.bat", shell=True)
+
+            dtms = geotiff_list
+        
+        else:
+            dtms = self.dtms
+        
+        total_jobs = (len(dtms) + (len(dtms) * len(self.ENC_paths)))
+        completed_jobs = 0
+        self.CA_progress["maximum"] = total_jobs
+
+        if self.CA_OUT_var.get():
+            base_output = self.CA_OUT_var.get()
+        else:
+            base_output = path.join(path.dirname(dtms[0]), 'Output')
+            #base_output = r"C:\CATools_Out"
+
+        if not path.exists(base_output):
+            mkdir(base_output)
+
+        with open('ChartCompare.bat', "w") as CC:
+            CC.write('@ECHO OFF' + '\n')
+            CC.write('cd /d "' + CATools + '"\n')
+
+            first_enc = self.ENC_paths[0]
+
+            for dtm in dtms:
+                dtm_name = os.path.splitext(os.path.basename(dtm))[0]
+
+                output_dir = os.path.join(base_output, dtm_name)
+                os.makedirs(output_dir, exist_ok=True)
+
+                selection_dir = os.path.join(output_dir, "SoundingSelection")
+                os.makedirs(selection_dir, exist_ok=True)
+
+                print(f"Generating sounding selection for {dtm_name}")
+
+                completed_jobs += 1
+                self.CA_progress["value"] = completed_jobs
+                self.progress_label.config(text=f"Sounding Selection: {completed_jobs}/{total_jobs}")
+                self.update_idletasks()
+
+                CC.write('CATools SurveyDTMVsChart '
+                     '--ss_algo ' + algo_flag + ' '
+                     '--th_depth 15.0 --dton_value_less 0.3 --dton_pct_more 10 '
+                     '-l -5.0 '
+                      f'"{dtm}" '
+                      f'"{first_enc}" '
+                      f'"{selection_dir}"\n')
+
+        """Running the batch"""
+        process = S.Popen("ChartCompare.bat", shell=True, stdout=S.PIPE, stderr=S.STDOUT, text=True)
+
+        output_lines = []
+
+        for line in process.stdout:
+            print(line.strip())
+            output_lines.append(line)
+        
+        process.wait()
+
+        sounding_files = {}
+
+        for dtm in dtms:
+            dtm_name = os.path.splitext(os.path.basename(dtm))[0]
+
+            selection_dir = os.path.join(base_output, dtm_name, "SoundingSelection")
+
+            for item in os.listdir(selection_dir):
+                item_path = os.path.join(selection_dir, item)
+
+                if os.path.isdir(item_path):
+                    for root, dirs, files in os.walk(item_path):
+                        for f in files:
+                            src = os.path.join(root, f)
+                            dst = os.path.join(selection_dir, f)
+
+                            print("\nSRC =", src)
+                            print("DST =", dst)
+                            print("SRC EXISTS =", os.path.exists(src))
+                            print("DST EXISTS =", os.path.exists(dst))
+
+                            if not os.path.exists(dst):
+                                try:
+                                    shutil.move(src, dst)
+                                except Exception as e:
+                                    print("\nMOVE FAILED")
+                                    print("SRC =", src)
+                                    print("DST =", dst)
+                                    print("SRC EXISTS =", os.path.exists(src))
+                                    print("DST EXISTS =", os.path.exists(dst))
+                                    print("ERROR =", repr(e))
+
+                                    raise
+                    shutil.rmtree(item_path, ignore_errors=True)
+
+            sounding_file = None
+
+            for root, dirs, files in os.walk(selection_dir):
+                for f in files:
+                    full_file = os.path.join(root, f)
+                    if f.lower().endswith("_sb.000"):
+                        sounding_file = full_file
+                    else:
+                        try:
+                            os.remove(full_file)
+                        except:
+                            pass
+                    
+                
+            if sounding_file:
+                sounding_files[dtm] = sounding_file
+                print("Found sounding file:", sounding_file)
+            
+        with open("SoundingsVsChart.bat", "w") as SC:
+            SC.write("@ECHO OFF\n")
+            SC.write('cd /d "' + CATools + '"\n')
+
+            for dtm in dtms:
+                sounding_file = sounding_files.get(dtm)
+
+                if not sounding_file:
+                    continue
+
+                dtm_name = os.path.splitext(os.path.basename(dtm))[0]
+
+                for enc in self.ENC_paths:
+                    enc_name = os.path.splitext(os.path.basename(enc))[0]
+
+                    enc_output_dir = os.path.join(base_output, dtm_name, enc_name)
+
+                    os.makedirs(enc_output_dir, exist_ok=True)
+
+                    completed_jobs += 1
+                    self.CA_progress["value"] = completed_jobs
+                    self.progress_label.config(text=f"ENC Comparison: {completed_jobs}/{total_jobs}")
+                    self.update_idletasks()
+
+                    SC.write('CATools SurveySoundingsVsChart '
+                     '--th_depth 15.0 --dton_value_less 0.3 --dton_pct_more 10 '
+                     '-l -5.0 '
+                      f'"{sounding_file}" '
+                      f'"{enc}" '
+                      f'"{enc_output_dir}"\n')
+        S.call("SoundingsVsChart.bat", shell=True)
+
+        overlap_encs = []
+        no_overlap_encs = []
+
+        for dtm in dtms:
+            dtm_name = os.path.splitext(os.path.basename(dtm))[0]
+
+            review_dir = os.path.join(base_output, "NAVWARN_REVIEW", dtm_name)
+
+            os.makedirs(review_dir, exist_ok=True)
+
+            dtm_folder = os.path.join(base_output, dtm_name)
+
+            for enc in self.ENC_paths:
+                enc_name = os.path.splitext(os.path.basename(enc))[0]
+
+                enc_folder = os.path.join(dtm_folder, enc_name)
+
+                if not os.path.exists(enc_folder):
+                    no_overlap_encs.append(enc_name)
+                    print(f"[NO OVERLAP] {enc_name}")
+                    continue
+
+                for item in os.listdir(enc_folder):
+                    item_path = os.path.join(enc_folder, item)
+
+                    if os.path.isdir(item_path):
+                            for root, dirs, files in os.walk(item_path):
+                                for f in files:
+                                    src = os.path.join(root, f)
+                                    dst = os.path.join(enc_folder, f)
+                                    
+                                    if not os.path.exists(dst):
+                                        shutil.move(src, dst)
+                            shutil.rmtree(item_path, ignore_errors=True)
+
+                files_found = False
+
+                for root, dirs, files in os.walk(enc_folder):
+                    if files:
+                        files_found = True
+                        break
+                
+                if files_found:
+                    overlap_encs.append(enc_name)
+                    print(f"[OVERLAP] {enc_name}")
+                
+                else:
+                    no_overlap_encs.append(enc_name)
+                    print(f"[NO OVERLAP] {enc_name}")
+
+            for root, dirs, files in os.walk(dtm_folder):
+                if "NAVWARN_REVIEW" in root:
+                    continue
+
+                for f in files:
+                    lower = f.lower()
+
+                    if ("discr_soundings.000" in lower or "dtons_soundings.000" in lower):
+                        shutil.copy2(os.path.join(root, f),
+                                     os.path.join(review_dir, f))
+                        
+        output_text = "".join(output_lines)
+
+        lines = output_text.splitlines()
+        filtered = [line.strip() for line in lines if "- possible" in line.lower() or "untested features" in line.lower()]
+
+        if filtered:
+            summary = "\n".join(filtered)
+        else:
+            summary = "Processing complete (no summary values found)"
+
+        msg = f"Processing complete\n\n{summary}\n\n"
+
+        if overlap_encs:
+            msg += "ENCs with overlap:\n"
+            msg += "\n".join(sorted(overlap_encs))
+            msg += "\n\n"
+        
+        if no_overlap_encs:
+            msg += "ENCs with NO overlap:\n"
+            msg += "\n".join(sorted(no_overlap_encs))
+
+        messagebox.showinfo("DTM vs ENC Results", msg)
+
+        #found = False
+
+        #for _ in range(10):
+            #for root, dirs, files in os.walk(path.join(path.dirname(dtms[0]), 'Output')):
+                #if any(f.lower().endswith(".png") for f in files):
+                    #found = True
+                  #  break
+            
+           # if found:
+               # break
+           # time.sleep(0.5)
+
+        #for dtm in dtms:
+            #dtm_name = path.splitext(path.basename(dtm))[0]
+            #output_dir = path.join(path.dirname(dtm), 'Output', dtm_name)
+
+            #opened = set()
+
+            #for root, dirs, files in os.walk(output_dir):
+                #for f in files:
+                    #if f.lower().endswith(".png"):
+                        #full_path = os.path.join(root, f)
+                        #if full_path not in opened:
+                            #img = mpimg.imread(full_path)
+                            #fig = plt.figure(figsize=(10, 10), dpi=150)
+                            #plt.imshow(img, aspect='equal')
+                            #plt.axis('off')
+                           #plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+                            #plt.show()
+                            #opened.add(full_path)
+        
+        self.CA_progress["value"] = self.CA_progress["maximum"]
+        self.progress_label.config(text="Complete")
+
+    
+    def Run_CATools_UI(self):
+        if not self.CA_ENC_var.get():
+            print("NO ENC folder selected.")
+            return
+        
+        if self.CA_input_mode.get() == "manual":
+            if not hasattr(self, "dtms") or not self.dtms:
+                print("No surface selected.")
+                return
+        
+        else:
+            self.dtms = []
+
+            try:
+                self.dtms = self.get_generated_surfaces()
+            except Exception as e:
+                print("Actual error:", repr(e))
+                return
+        self.Run_CATools()
+    
+
+    def get_generated_surfaces(self):
+
+        #base = os.path.normpath(self.HDCS_D.get())
+        #print("HDCS_D =", repr(base))
+        #surface_dir = os.path.join(base, "Surfaces")
+
+        base = self.HDCS_D.get()
+
+        if base.endswith("Processed_Data"):
+            surface_dir = os.path.join(base, "Surfaces")
+        else:
+            surface_dir = os.path.join(base, "Processed_Data", "Surfaces")
+
+        print("Scanning from:", surface_dir)
+
+        if not os.path.exists(surface_dir):
+            raise Exception("Surface directory not found.")
+
+        jd = self.JULIAN_D.get()
+        year = self.Year.get()
+
+        target_files = [f"{jd}_{year}.tif",
+                        f"{jd}_{year}.tiff",
+                        f"{jd}_{year}.bag"]
+        
+        surfaces = []
+
+        for root, dirs, files in os.walk(surface_dir):
+            for f in files:
+                print("Checking file:", repr(f))
+
+                if f in target_files:
+                    full_path = os.path.join(root, f)
+                    surfaces.append(full_path)
+        
+        if not surfaces:
+            raise Exception("No surfaces found.")
+        
+        print("Found surfaces:")
+        for s in surfaces:
+            print(s)
+        
+        return surfaces
+    
+
+    def Toggle_CA_Input_Mode(self):
+        if not hasattr(self, "CA_DTM_entry"):
+            return
+        
+        mode = self.CA_input_mode.get()
+
+        if mode == "auto":
+            self.CA_DTM_entry.config(state="disabled")
+            self.CA_DTM_button.config(state="disabled")
+
+        else:
+            self.CA_DTM_entry.config(state="normal")
+            self.CA_DTM_button.config(state="normal")
+    
+
+    def Load_SOUACC(self):
+
+        if self.SOUACC_F.get() == 1:
+
+            self.SOUACC_frame = LabelFrame(frame10, text="SOUACC Calculation", foreground="blue")
+            self.SOUACC_frame.grid(row=6, column=0, sticky=W)
+        
+            self.SOUACC_DIR = StringVar()
+            self.SOUACC_text = Label(self.SOUACC_frame, text="Surface Folder")
+            self.SOUACC_text.grid(row=0, column=0, sticky=W)
+            self.SOUACC_entry = Entry(self.SOUACC_frame, width=38, textvariable=self.SOUACC_DIR)
+            self.SOUACC_entry.grid(row=0, column=1, sticky=W)
+            self.SOUACC_btn = Button(self.SOUACC_frame, text="...", height=0, command=self.select_souacc_dir)
+            self.SOUACC_btn.grid(row=0, column=2, sticky=W, padx=2)
+            
+            self.SOUACC_convert = Button(self.SOUACC_frame, text="Convert Final Surfaces to Text Files", height=0, command=self.convert_csar_to_txt)
+            self.SOUACC_convert.grid(row=1, column=0, sticky=W, padx=2)
+
+            self.SOUACC_calc = Button(self.SOUACC_frame, text="Calculate SOUACC", height=0, command=self.calculate_souacc)
+            self.SOUACC_calc.grid(row=2, column=0, sticky=W, padx=2)
+
+            self.SOUACC_output = Text(self.SOUACC_frame, width=60, height=10)
+            self.SOUACC_output.grid(row=3, column=0, columnspan=3)
+        
+        else:
+            try:
+                self.SOUACC_frame.grid_forget()
+            except AttributeError:
+                pass
+
+    
+    def select_souacc_dir(self):
+        folder=filedialog.askdirectory(title="Select Surface Folder")
+        self.SOUACC_DIR.set(folder)
+    
+
+    def convert_csar_to_txt(self):
+        user_dir = self.SOUACC_DIR.get()
+        file_list = listdir(user_dir)
+
+        script_dir = os.path.dirname(__file__)
+        bat_path = os.path.join(script_dir, "Coverage_to_ASCII.bat")
+
+        with open(bat_path, "w") as ECTA:
+            ECTA.write('@ECHO OFF\n')
+            ECTA.write(f'call "C:/Program Files/CARIS/HIPS and SIPS/12.1/system/caris_env.bat"\n')
+            ECTA.write('@ECHO Exporting Coverage to ASCII\n')
+
+            for sf in file_list:
+                if sf.lower().endswith('.csar'):
+                    sf_path = os.path.join(user_dir, sf)
+                    sf_name = os.path.splitext(sf)[0]
+                    out_path = os.path.join(user_dir, sf_name + ".txt")
+                    ECTA.write(
+                        f'carisbatch --run ExportCoverageToASCII '
+                        f'--include POSITION Lat 6 DD '
+                        f'--include POSITION Lon 6 DD '
+                        f'--include BAND Depth 2 m '
+                        f'--include BAND Uncertainty 2 m '
+                        f'"{sf_path}" "{out_path}"\n')
+        S.check_call(bat_path, shell=True)
+
+
+    def calculate_souacc(self):
+        user_dir = self.SOUACC_DIR.get()
+        files = listdir(user_dir)
+        self.SOUACC_output.delete(1.0, END)
+
+        for f in files:
+            if f.endswith(".txt"):
+                self.SOUACC_output.insert(END, f"{f.strip('.txt')}\n")
+                ASCII_Out = pd.read_csv(f"{user_dir}/{f}", sep=' ', header=0, low_memory=False)
+                ASCII_Out.columns = ["Lat", "Long", "Depth", "Depth TPU"]
+                ASCII_Out["Weight"] = 1/ASCII_Out["Depth"]
+                ASCII_Out["WTVU"] = ASCII_Out["Weight"] * ASCII_Out["Depth TPU"]
+                SOUACC = str(round((ASCII_Out["WTVU"].sum())/(ASCII_Out["Weight"].sum()), 2)) + " m"
+                self.SOUACC_output.insert(END, f"Calculated Sounding Accuracy is {SOUACC} metres.\n")
+                self.SOUACC_output.insert(END, "---------------------------------\n")
 
 
     def Load_Daily_Reports(self):
@@ -3377,7 +3806,7 @@ class Application(Frame):
             self.SVP_Dirtext.grid(row=1, column=0, sticky=W)
             self.SVP_Dir.grid(row=1, column=1, sticky=W)
             self.ButtonSVP_Dir = Button(self.Daily, text="...", height=0,
-                                  command=self.Search_SVP)
+                                        command=self.Search_SVP)
             self.ButtonSVP_Dir.grid(row=1, column=2, sticky=W, padx=2)
     
             self.REP_F = StringVar()
@@ -3416,17 +3845,13 @@ class Application(Frame):
             self.Weeknotext.grid(row=5, column=0, sticky=W)
             self.Weekno.grid(row=5, column=1, sticky=W)
 
-            self.New_Sheet = IntVar()
-            self.New_Sheet_B = Checkbutton(self.Daily, onvalue=1, offvalue=0, variable=self.New_Sheet, text= "Create a New Sheet")
-            self.New_Sheet_B.grid(row=7, column=0, sticky=W)
-
             self.TPUQC=IntVar()
             Radiobutton(self.Daily, text= "HIPS Points QC", variable=self.TPUQC, value=2).grid(row=6, column=0, sticky= W, padx=1)
             Radiobutton(self.Daily, text= "Surface QC", variable=self.TPUQC, value=1).grid(row=6, column=1, sticky= W, padx=1)
 
             self.Button_Rep = Button(self.Daily, text="Create Daily, Weekly Reports", height=0,
                                command=self.Run_Daily_Report)
-            self.Button_Rep.grid(row=8, column=0, sticky=W, padx=2)
+            self.Button_Rep.grid(row=7, column=0, sticky=W, padx=2)
 
             Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
             #Line = (Parameters.iloc[14,0])
@@ -3458,10 +3883,11 @@ class Application(Frame):
     def Load_BoundingPoly(self):
 
         if self.BP.get() == 1:
-            self.BoundingP = LabelFrame(frame9, text="Create Bounding Polygon", foreground="blue")
+            self.BoundingP = LabelFrame(frame10, text="Create Bounding Polygon", foreground="blue")
             self.BoundingP.grid(row=5, column=0, sticky=W)
 
-            self.VALSRC_F = StringVar()
+            if not hasattr(self, "VALSRC_F"):
+                self.VALSRC_F = StringVar()
             self.VALSRC_f = Entry(self.BoundingP, width=38, textvariable=self.VALSRC_F)
             self.VALSRC_text = Label(self.BoundingP, text="Surface Folder")
             self.VALSRC_text.grid(row=1, column=0, sticky=W)
@@ -3485,254 +3911,42 @@ class Application(Frame):
     def Load_Finalization_Submission(self):
 
         if self.Finalize.get() == 1:
-            self.Finalization = LabelFrame(frame9, text="Finalize and Submission", foreground="blue")
+            self.Finalization = LabelFrame(frame10, text="Finalize Surfaces", foreground="blue")
             self.Finalization.grid(row=2, column=0, sticky=W)
 
-            self.ArcFinalize = IntVar()
-            self.ArcFinalize_B = Checkbutton(self.Finalization, onvalue=1, offvalue=0, variable=self.ArcFinalize, text= "Arctic Proccessing")
-            self.ArcFinalize_B.grid(row=2, column=0, sticky=W)
+            if not hasattr(self, "VALSRC_F"):
+                self.VALSRC_F = StringVar()
 
-            self.VALSRC_F = StringVar()
             self.VALSRC_f = Entry(self.Finalization, width=38, textvariable=self.VALSRC_F)
             self.VALSRC_text = Label(self.Finalization, text="Surface Folder")
-            self.VALSRC_text.grid(row=1, column=0, sticky=W)
-            self.VALSRC_f.grid(row=1, column=1, sticky=W)
+            self.VALSRC_text.grid(row=0, column=0, sticky=W)
+            self.VALSRC_f.grid(row=0, column=1, sticky=W)
             self.ButtonSF = Button(self.Finalization, text="...", height=0,
                                       command=self.Search_VALSRC_Folder)
-            self.ButtonSF.grid(row=1, column=2, sticky=W, padx=2)
-
-            self.Convert11to4 = IntVar()
-            self.Convert11to4_B = Checkbutton(self.Finalization, onvalue=1, offvalue=0, variable=self.Convert11to4, text= "Convert Surface to Base 4.4")
-            self.Convert11to4_B.grid(row=2, column=1, sticky=W)
-
-            self.ISO_Only = IntVar()
-            self.ISO_Only_B = Checkbutton(self.Finalization, onvalue=1, offvalue=0, variable=self.ISO_Only, text= "Create VALSRC Forms Only")
-            self.ISO_Only_B.grid(row=2, column=2, sticky=W)
+            self.ButtonSF.grid(row=0, column=2, sticky=W, padx=2)
 
             self.Button_Final = Button(self.Finalization, text="Finalize Surfaces", height=0,
                                command=self.FinalizeQC)
-            self.Button_Final.grid(row=20, column=0, sticky=W, padx=2)
-
-            self.SURSTA = StringVar()
-            self.Sursta = Entry(self.Finalization, width=20, textvariable=self.SURSTA)
-            self.Surstatext = Label(self.Finalization, text="SURSTA (YYYYMMDD)")
-            self.Surstatext.grid(row=3, column=0, sticky=W)
-            self.Sursta.grid(row=3, column=1, sticky=W)
-
-            self.SUREND = StringVar()
-            self.Surend = Entry(self.Finalization, width=20, textvariable=self.SUREND)
-            self.Surendtext = Label(self.Finalization, text="SUREND (YYYYMMDD)")
-            self.Surendtext.grid(row=4, column=0, sticky=W)
-            self.Surend.grid(row=4, column=1, sticky=W)
-
-            self.POSACC = StringVar()
-            self.Posacc = Entry(self.Finalization, width=20, textvariable=self.POSACC)
-            self.Posacctext = Label(self.Finalization, text="POSACC (m)")
-            self.Posacctext.grid(row=5, column=0, sticky=W)
-            self.Posacc.grid(row=5, column=1, sticky=W)
-
-            self.POSHDW= StringVar()
-            pos_meth = ['APOSMV',
-                        'APOSAV',]
-            self.pos_hdw_op = ttk.Combobox(self.Finalization, values=pos_meth, width=1, textvariable=self.POSHDW)
-            self.pos_hdw_text = Label(self.Finalization, text="POSHDW")
-            self.pos_hdw_text.grid(row=6, column=0, sticky=W)
-            self.pos_hdw_op.grid(row=6, column=1, sticky=W+E, padx=0)
-
-            self.TECPOS= StringVar()
-            tec_pos = ['RTK',
-                       'PPKGPS',
-                        'DGPS',
-                        'WAAS']
-            self.tec_pos_op = ttk.Combobox(self.Finalization, values=tec_pos, width=1, textvariable=self.TECPOS)
-            self.tec_pos_text = Label(self.Finalization, text="TECPOS")
-            self.tec_pos_text.grid(row=7, column=0, sticky=W)
-            self.tec_pos_op.grid(row=7, column=1, sticky=W+E, padx=0)
-
-            self.COLCMETH= StringVar()
-            tec_pos = ['SIS',
-                       'QINSY',
-                        'HYPACK']
-            self.colc_meth_op = ttk.Combobox(self.Finalization, values=tec_pos, width=1, textvariable=self.COLCMETH)
-            self.colc_meth_op_text = Label(self.Finalization, text="Collection Method")
-            self.colc_meth_op_text.grid(row=8, column=0, sticky=W)
-            self.colc_meth_op.grid(row=8, column=1, sticky=W+E, padx=0)
-
-            self.Finalization_msg = LabelFrame(frame9, text="Finalization Message", foreground="blue")
-            self.Finalization_msg.grid(row=10, column=0, padx=1, sticky=N+W)
-
-            msg = ('PLEASE READ ALL 5 MEASSAGES BEFORE RUNNING PROCCESS\n'
-                   '1. Please check that the name of the project is correct and populated '
-                   'as this will be used to '
-                   'populated the '
-                   'Project, Location, Vessel, and System '
-                   'metadata fields in the VALSRC ISO Form.\n'
-                   '\n2. Ensure to select the Apply Tide '
-                   'option and the corrsiponding tide reduction used (GPS or Observed/Predicted '
-                   'on the Caris Hips Proccessing '
-                   'tab, and populate the '
-                   'Tide Model or Tide file '
-                   'option in the Apply Tides tab. This will be used to populate '
-                   'the Tide reduction field in the VALSRC ISO Form.\n'
-                   '\n3. For regular Atlantic proccessing all surfaces will be Finalized with the Depth Uncertainty bands, '
-                   'and TVU graphs and Caris surface QC reports created in the QC folder.\n'
-                   '\n4. For Arctic Proccessing the surfaces will be Finalized with the Depth and Uncertainty bands, '
-                   'TVU graphs and Caris surface QC reports created in the QC folder, '
-                   'surfaces will be transformed from EPSG:5937 into ESPG8999@2010 with PACD set as the vertical reference, '
-                   'and the surfaces will be cut to the Arctic Tiles.\n'
-                   '\n5. Lastly the bounding polygon for each surfaces will be created and added to the corrisponding bounding polygon band  '
-                   'with all interior holes removed.-CRS Issue need further investigatetion take the Final shapefile and manually import\n'
-                   'Atlantic: VALSRC_cvrage(A)_FinalBP.shp\n'
-                   'Arctic: Warped_VALSRC#_Tile#_Extractcvrage(A)_FinalBP.shp'
-                   ) ## User Reminder
-
-            self.User_Msg = Text(self.Finalization_msg, width=55, height=17, wrap=WORD)
-            self.User_Msg.insert(END, msg)
-            self.User_Msg.config(state='disabled')
-            self.User_Msg.grid(row=0, column=1, padx=1, sticky=W)
-
+            self.Button_Final.grid(row=1, column=0, columnspan=3, pady=5)
 
         else:
             try:
                 ##Forget Options for Finalization
                 self.Finalization.grid_forget()
-                self.Finalization_msg.grid_forget()
             except AttributeError:
                 pass
-
-
-    def ISO_1001_07_F02(self):
-
-        PH = self.split_Project_Name()
-        Projectlist = PH[2]
-        VF = self.VALSRC_F.get()
-        V_F = VF + '/' + self.Finalized_Folder
-        list_VF = listdir(V_F)
-        self.QC_Folder = ('QC')
-
-        if self.T_T.get()==1:
-            Model_Path = self.M_F.get()
-            Model_Pathsplit = path.split(Model_Path)
-            Model_File = Model_Pathsplit[1]
-
-        Projectno = Projectlist[0]
-        Location = Projectlist[1]
-        Vessel = Projectlist[3]
-        SNDTYP = Projectlist[4]
-        TRDCT = Model_File
-        SURSTA = self.SURSTA.get()
-        SUREND = self.SUREND.get()
-        POSHDW = self.POSHDW.get()
-        TECPOS = self.TECPOS.get()
-        COLCMETH = self.COLCMETH.get()
-
-        POSACC = str(self.POSACC.get() + 'm')
-        CATZOC = None
-
-        for V in list_VF:
-            if V.endswith('.csar'):
-                File_Name = V.replace(".csar", "")
-                ASCII_Out = pd.read_csv(VF + '/' + self.QC_Folder + '/' + File_Name + '_FinalizedQC.txt', sep=' ', header=0, low_memory=False)
-                ASCII_Out.columns = ["Lat", "Long", "Depth", "Depth TPU"]
-                ASCII_Out["Weight"] = 1/(ASCII_Out['Depth'])
-                ASCII_Out["W*TVU"] = ASCII_Out['Weight'] * ASCII_Out['Depth TPU']
-                SOUACC = (str(round((ASCII_Out["W*TVU"].sum())/(ASCII_Out["Weight"].sum()),2)) + 'm')
-                
-                source_part = File_Name.split('_')
-                VALSRC = source_part[0]
-
-                raster = cov.Raster(V_F + '/' + V)
-                Metadata = raster.iso19139_xml
-                Csarxml = open(V_F + '/' + File_Name + '.xml', "w")
-                Csarxml.write(Metadata)
-
-                #Parse the Csar xml
-                xmldoc = minidom.parse(V_F + '/' + str(File_Name) + '.xml')
-                res_xml_loc = (xmldoc.getElementsByTagName('gco:Measure')[0])
-                res_child_loc  =res_xml_loc.childNodes[0].nodeValue
-                RES = str(res_child_loc)
-
-                CRS_xml_loc = (xmldoc.getElementsByTagName('gco:CharacterString')[4])
-                CRS_child_loc = CRS_xml_loc.childNodes[0].nodeValue
-                CRS_T = CRS_child_loc.partition(',')[0]
-
-                if CRS_T == 'PROJCS["NAD83(CSRS) / UTM zone 19N"':
-                    HORDAT = 'NAD83(CSRS)/ UTM zone 19N@2010'
-                elif CRS_T == 'PROJCS["NAD83(CSRS) / UTM zone 20N"':
-                    HORDAT = 'NAD83(CSRS)/ UTM zone 20N@2010'
-                elif CRS_T == 'PROJCS["NAD83(CSRS) / UTM zone 21N"':
-                    HORDAT = 'NAD83(CSRS)/ UTM zone 21N@2010'
-                    
-                if CRS_T == 'PROJCS["WGS 84 / UTM zone 19N"':
-                    HORDAT = 'WGS84/ UTM zone 19N@2010'
-                elif CRS_T == 'PROJCS["WGS 84 / UTM zone 20N"':
-                    HORDAT = 'WGS84/ UTM zone 20N@2010'
-                elif CRS_T == 'PROJCS["WGS 84 / UTM zone 21N"':
-                    HORDAT = 'WGS84/ UTM zone 21N@2010'
-                    
-                elif CRS_T == 'GEOGCS["ITRF2014"':
-                    HORDAT = 'ITRF2014@2010'
-                elif CRS_T == 'GEOGCS["ITRF2008"':
-                    HORDAT = 'ITRF2008@2010'
-    
-                elif CRS_T == 'PROJCS["WGS 84 / EPSG Canada Polar Stereographic"':
-                    HORDAT = 'ITRF2008@2010'
-
-                META = [Location,
-                        None,
-                        'Validated',
-                        SURSTA,
-                        SUREND,
-                        VALSRC,
-                        Vessel,
-                        'Canadian Hydrographic Service',
-                        '1 : XXX',
-                        'Multibeam',
-                        'Controlled Survey',
-                        POSHDW,
-                        POSACC,
-                        TECPOS,
-                        HORDAT,
-                        SNDTYP,
-                        'Enter manually or use dropdown list in cell below',
-                        'MULTBM - Multibeam',
-                        SOUACC,
-                        'PATCHT',
-                        'POSPAC, HIPS',
-                        'Enter manually or use dropdown list in cell below',
-                        COLCMETH,
-                        'N/A',
-                        RES,
-                        None,
-                        TRDCT,
-                        None,
-                        'N/A',
-                        CATZOC,
-                        'Open/Restricted',
-                        VALSRC]
-
-                MetaData = openpyxl.load_workbook('1001-07-A-F02_Meta_Data_Template.xlsx')
-                worksheet = MetaData.get_sheet_by_name('301-F03')
-                worksheet['A4'] = ('Project # ' + Projectno + ' CHS Atlantic')
-                worksheet['A5'] = ('METADATA FOR SOURCE #  ' + VALSRC)
-
-                C = 8
-                for MetaD in META:
-                    worksheet['C' + str(C)] = MetaD
-                    C = C + 1
-                MetaData.save( V_F + '/'  + '1001-07-A-F02_' + str(File_Name) + '_Meta_Data.xlsx')
 
 
     def Load_ATL_SUB_ISO(self):
 
         if self.HDC_F.get() == 1:
-            self.Dir_Form = LabelFrame(frame9, text="Create ATL ISO 1001 07 AF01", foreground="blue")
+            self.Dir_Form = LabelFrame(frame10, text="Create ATL ISO 1001 07 AF01", foreground="blue")
             self.Dir_Form.grid(row=3, column=0, sticky=W)
 
             self.SIG = StringVar()
 
-            self.Sig = Entry(self.Dir_Form, width=5, textvariable=self.SIG)
-            self.Sig_text = Label(self.Dir_Form, text="Intials")
+            self.Sig = Entry(self.Dir_Form, width=25, textvariable=self.SIG)
+            self.Sig_text = Label(self.Dir_Form, text="Full Name")
             self.Sig_text.grid(row=1, column=0, sticky=W)
             self.Sig.grid(row=1, column=1, sticky=W)
 
@@ -3797,93 +4011,51 @@ class Application(Frame):
     def FinalizeQC(self):
 
         V_F = self.VALSRC_F.get()
-        list_VF = listdir(V_F)
+
+        if not V_F or not path.exists(V_F):
+            print("Invalid VALSRC folder.")
+            return
+
         self.Finalized_Folder = ('Finalized_Surfaces')
-        self.QC_Folder = ('QC')
+
         chdir(V_F)
-        if path.exists(self.Finalized_Folder):
-            pass
-        else:
+
+        if not path.exists(self.Finalized_Folder):
             mkdir(self.Finalized_Folder)
-        if path.exists(self.QC_Folder):
-            pass
-        else:
-            mkdir(self.QC_Folder)
+
         chdir(owd)
 
-        for V in list_VF:
-            if V.endswith(".csar"):
-                self.V = V.replace(".csar", "")
-                self.Finalize_QC()
-        
-        if self.ISO_Only.get() == 0:
-            self.Finalize_Surfaces()
-        
-        self.ISO_1001_07_F02()
-
-        if self.ArcFinalize.get() == 1:
-            self.Cut_Folder = (V_F + '/' + self.Finalized_Folder + '/CutSurfaces')
-            if path.exists(self.Cut_Folder):
-                pass
-            else:
-                mkdir(self.Cut_Folder)
-            self.Warped_Folder = (V_F + '/' + self.Finalized_Folder + '/WarpedSurfaces')
-            if path.exists(self.Warped_Folder):
-                pass
-            else:
-                mkdir(self.Warped_Folder)
-            if path.exists(self.Cut_Folder +'/WKT_Tiles'):
-                pass
-            else:
-                mkdir(self.Cut_Folder +'/WKT_Tiles')
-            self.Warping(V_F)
-            self.TileCut()
-
-            Cutsursdir = self.Cut_Folder
-            Cutsurs = listdir(Cutsursdir)
-            for cutsur in Cutsurs:
-                if cutsur.endswith(".csar"):
-                    pass
-                    self.Vectorize_Raster2(cutsur, Cutsursdir)
-            dircut = listdir(Cutsursdir)
-            
-            for shp in dircut:
-                if shp.endswith('.shp'):
-                    Prj = 'EPSG:8999'
-                    self.Remove_Holes(Cutsursdir + '/' + shp, Prj)
-        else:
-            Fsursdir = V_F + '/' + self.Finalized_Folder
-            Fsurs = listdir(Fsursdir)
-            for Fsur in Fsurs:
-                if Fsur.endswith(".csar"):
-                    self.Vectorize_Raster2(Fsur, Fsursdir)
-            Fsurs2 = listdir(Fsursdir)
-                    
-        for shp in Fsurs2:
-            if shp.endswith('.shp'):
-                Prj = 'EPSG:4326'
-                self.Remove_Holes(Fsursdir + '/' + shp, Prj)
-        
-        if self.Convert11to4.get() ==1:
-            self.HIPS11_to_BASE4()
-
+        self.Finalize_Surfaces()
+ 
 
     def Create_BoundingPoly(self):
 
         V_F = self.VALSRC_F.get()
-        list_VF = listdir(V_F)
 
-        for V in list_VF:
+        if not V_F or not path.exists(V_F):
+            print("Invalid surface folder.")
+            return
+        
+        print("\n=== START BOUNDING POLYGON CREATION ===\n")
+        
+        for f in listdir(V_F):
+            if f.endswith(".csar"):
+                full_path = path.join(V_F, f)
+                print("Processing", full_path)
 
-            if V.endswith(".csar"):
-                self.V = V.replace(".csar", "")
-                self.Vectorize_Raster2(V, V_F)
+                try:
+                    params = BP.compute_parameters(full_path)
+                    print("Params:", params)
 
-        list_VF2 = listdir(V_F)
-        for shp in list_VF2:
-            if shp.endswith('.shp'):
-                Prj = 'EPSG:4326'
-                self.Remove_Holes(V_F + '/' + shp, Prj)
+                    poly = BP.create_bp(full_path, params[0], params[1])
+                    print("Poly:", poly)
+                    
+                    print(f"Success: {f}")
+                
+                except Exception as e:
+                    print(f"Failed: {f} | Error: {e}")
+        
+        print("\n=== BOUNDING POLYGON COMPLETE ===\n")
 
   
     def Vectorize_Raster2(self, surface, Out):
@@ -3906,227 +4078,6 @@ class Application(Frame):
         p = S.check_call("Vectorize_Raster.bat", stdin=None, stdout=None, stderr=None, shell=False)
 
 
-    def Remove_Holes(self, Shpf, Prj):
-
-
-        Poly = shapefile.Reader(Shpf)
-        SHP = Shpf.split('.shp')
-
-        g = []
-
-        for s in Poly.shapes():
-            g.append(pygeoif.geometry.as_shape(s))
-        
-        m = pygeoif.MultiPolygon(g)
-        P = wkt.loads(str(m))
-
-        omega = unary_union([
-        Polygon(component.exterior) for component in P])
-
-
-        features = [i for i in range(len(P))]
-        gdr = gpd.GeoDataFrame({'feature': features, 'geometry': omega}, crs=Prj)
-        gdr.to_file(SHP[0] + '_FinalBP.shp')
-        
-
-    def Warping(self, V_F):
- 
-        s_list = listdir(V_F + '/Finalized_Surfaces')
-
-        with open("Warp.bat", "w") as Import:
-            Import.write('@ECHO OFF' + '\n')
-            Import.write('@ECHO Warp Surfaces' + '\n')
-            Import.write('cd '+ BASE5 + '\n')
-            chdir(V_F)
-            for s in s_list:
-                if s.endswith('.csar'):
-                   
-                    raster = cov.Raster(s)
-                    Metadata = raster.iso19139_xml
-                    Csarxml = open(s + '.xml', "w")
-                    Csarxml.write(Metadata)
-
-                    xmldoc = minidom.parse(s + '.xml')
-                    res_xml_loc = (xmldoc.getElementsByTagName('gco:Measure')[0])
-                    res_child_loc  =res_xml_loc.childNodes[0].nodeValue
-                    RES = str(res_child_loc)
-
-                    Import.write('carisbatch --run WarpRaster' +
-                                 ' --output-crs EPSG:8999@2010 --input-band Depth BICUBIC NONE' +
-                                 ' --output-vertical-crs CUSTOM:69036444' +
-                                 ' --primary-band Depth NEAREST_NEIGHBOUR NONE' +
-                                 ' --input-band Uncertainty NEAREST_NEIGHBOUR NONE' +
-                                 ' --resolution ' + RES + 'm' + 
-                                 ' --reprojection-method EXACT ' +
-                                 V_F + '/' + self.Finalized_Folder + '/' + s + ' ' + self.Warped_Folder +'/' + 'Warped_' + s + '\n')
-        chdir(owd)
-
-        p = S.check_call('Warp.bat', stdin=None, stdout=None, stderr=None, shell=False)
-
-
-
-    def TileCut(self):
-
-        WGS_84 = ('GEOGCS["WGS 84",DATUM["World Geodetic System 1984",SPHEROID["WGS 84",6378137,298.2572235629972,AUTHORITY["EPSG","7030"]],' +
-                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree (supplier to define representation)",' +
-                  '0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]')
-        ITRF_2008 =('GEOGCS["ITRF2008",DATUM["International Terrestrial Reference Frame 2008",SPHEROID["GRS 1980",6378137,298.2572221010041,' +
-                    'AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","1061"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],' +
-                    'UNIT["degree (supplier to define representation)",0.0174532925199433,AUTHORITY["EPSG","9122"]],' +
-                    'EXTENSION["tx_authority","EPSG:7666"],AUTHORITY["EPSG","8999"]]')
-        
-
-        Surfaces = self.Warped_Folder
-        Csar_Dir = self.Cut_Folder
-        chdir(owd)
-        Grid_Tiles = ('ArcticGrid/ARCTIC_CELLS_CUT_TOOL_10x10_V2.shp')
-        
-        sf1 = shapefile.Reader(Grid_Tiles)
-        
-        i = 0
-        for s in sf1.shapes():
-
-            rec = sf1.record(i)
-            Tno = rec[8]
-            #print(Tno)
-            wkt = pygeoif.geometry.as_shape(s)
-          
-            f = open(self.Cut_Folder + '/WKT_Tiles' + '/Tile_' + str(Tno) + '.wkt', "w+")
-            f.write(ITRF_2008 + '\n' + str(wkt))
-            f.close()
-            i = i + 1
-
-        SURFACES = listdir(Surfaces)
-        
-
-        
-        for Sur in SURFACES:
-            if Sur.endswith('.csar'):
-                print(Sur)
-
-                self.Vectorize_Raster2(Sur,Surfaces)
-
-                S2 = re.sub(".csar", "", Sur)
-                
-                match = (S2 + 'cvrage(A).shp')
-                SURFACES = listdir(Surfaces)
-
-                polygon = [j for j in SURFACES if match in j]
-                
-
-                shp_dataset_a = caris.open(file_name=str(Surfaces + '/') + str(polygon[0]), open_mode=caris.OpenMode.READ_WRITE)
-                shp_dataset_b = caris.open(file_name=str(Grid_Tiles), open_mode=caris.OpenMode.READ_WRITE)
-
-                all_BP = shp_dataset_a.query_all()
-
-                Tiles = []
-                for feature_a in all_BP:
-
-                    feature_geom = feature_a.geometry
-                    
-                    
-                    intersecting_features = shp_dataset_b.query("ARCTIC_CELLS_CUT_TOOL_10x10_V2", intersects=feature_geom)
-
-
-                    for feature in intersecting_features:
-                            n = str(feature['FID'])
-                            if n not in Tiles:
-                                Tiles.append(n)
-                            Sur = re.sub(".csar", "", Sur)
-                            print (str(feature['FID']))
-
-                with open("Extract_" + Sur + ".bat", "w+") as E:
-                        E.write('@ECHO OFF' + '\n')
-                        E.write('C:' + '\n')
-                        E.write('cd '+ str(Caris) + '\n')
-
-                        for T in Tiles:
-                                E.write('carisbatch --run ExtractCoverage --include-band ALL --extract-type INCLUSIVE ' +
-                                        '--geometry-file ' + self.Cut_Folder + '/WKT_Tiles' + '/Tile_' + T + '.wkt ' + Surfaces + '/' + Sur + '.csar ' +
-                                        Csar_Dir + '/' + Sur + '_' + T + '_Extract.csar' + '\n')
-
-
-                p = S.check_call("Extract_" + Sur + ".bat", stdin=None, stdout=None, stderr=None, shell=False)
-
-       
-    def Finalize_QC(self):
-
-        V_F = self.VALSRC_F.get()
-        list_VF = listdir(V_F)
-        IHO_orders = ['EXCLUSIVE', 'SPECIAL', '1A', '1B', '2', '3']
-        t_95_1d = 1.96
-        t_95_2d = 2.45
-
-        with open("Coverage_to_ASCII.bat", "w") as ECTA:
-            ECTA.write('@ECHO OFF' + '\n')
-            ECTA.write('cd '+ Caris + '\n')
-            ECTA.write('@ECHO Exporting Coverage to ACSII' + '\n')
-            ECTA.write('carisbatch --run ExportCoverageToASCII' +
-                         ' --include POSITION Lat 6 DD' +
-                         ' --include POSITION Lon 6 DD' +
-                         ' --include BAND Depth 2 m' +
-                        ' --include BAND Uncertainty 2 m ' +
-                        V_F + '/' + self.V +  '.csar ' +
-                        ' ' + V_F + '/' + self.QC_Folder + '/' + self.V + '_FinalizedQC.txt')
-        p = S.check_call("Coverage_to_ASCII.bat", stdin=None, stdout=None, stderr=None, shell=False)
-
-        ASCII_Out = pd.read_csv(V_F + '/' + self.QC_Folder + '/' + self.V + '_FinalizedQC.txt', sep=' ', header=0, low_memory=False)
-        ASCII_Out.columns = ["Lat", "Long", "Depth", "Depth TPU"]
-
-        TVU_QC = pd.DataFrame(columns=['IHO Order', 'Percentage within Allowable', 'Number of Nodes Considered'])
-
-        for orders in IHO_orders:
-            TVU_D = []
-            for Depth in ASCII_Out['Depth']:
-                TPU2 = TPU(orders, Depth)
-                TVU_D.append(TPU2[0])
-            ASCII_Out['Allowable TVU'] = TVU_D
-            ASCII_Out['Within Allowable TVU'] = np.where(ASCII_Out['Depth TPU'] <= ASCII_Out['Allowable TVU'],
-                                                'yes', 'no')
-            P_W_A_TVU = round(((len(ASCII_Out[ASCII_Out['Within Allowable TVU'] == 'yes'])/len(ASCII_Out)))*100,2)
-            TVU_QC = TVU_QC.append({'IHO Order' : orders,  'Percentage within Allowable': P_W_A_TVU, 'Number of Nodes Considered' : len(ASCII_Out) }, ignore_index=True)
-
-            Depth_mean = round(ASCII_Out['Depth'].mean(),3)
-
-            Depth_TPU_max = round(ASCII_Out['Depth TPU'].max(),3)
-            Depth_TPU_min = round(ASCII_Out['Depth TPU'].min(),3)
-            Depth_TPU_mean = round(ASCII_Out['Depth TPU'].mean(),3)
-            Depth_TPU_std = round(ASCII_Out['Depth TPU'].std(),3)
-            Depth_95_p = round((Depth_TPU_mean + t_95_1d*Depth_TPU_std),3)
-            Depth_95_n = round((Depth_TPU_mean - t_95_1d*Depth_TPU_std),3)
-
-            TPU_v = TPU(orders, Depth_mean)
-            fig, ax = plt.subplots(nrows=2)
-            D_TPU = list(ASCII_Out.loc[:,'Depth TPU'])
-            ax[0].hist(D_TPU, weights=np.ones(len(D_TPU)) / len(D_TPU), alpha=0.5)
-            ax[0].axvline(Depth_TPU_max, 0, c='r', label = "MAX = " + str(Depth_TPU_max) + 'm')
-            ax[0].axvline(Depth_TPU_mean, 0, c='g', label = "MEAN = " + str(Depth_TPU_mean) + 'm')
-            ax[0].axvline(Depth_TPU_min, 0, c='c', label = "MIN = " + str(Depth_TPU_min) + 'm')
-            ax[0].axvline(Depth_95_p, 0, c='m', label = "95% Level = " + str(Depth_95_p) + 'm')
-            ax[0].axvline(TPU_v[0], 0, c='k', label = "CHS/IHO = " + str(TPU_v[0]) + 'm')
-            ax[0].legend(loc='upper right')
-            ax[0].set_title('Vertical Accuracy (Ave Depth ' + str(Depth_mean) + ' m)' + '(Order = ' + str(orders) + ')\n')
-            ax[0].set_xlabel('Depth Accuracy (m)')
-            ax[0].set_ylabel('Percentage (%)')
-
-            maxd = round(ASCII_Out['Depth'].max(),0)+5
-            Depths = np.arange(0,maxd,1)
-            Contours = [0,2,5,10,15,20,30,50,100]
-            ATPU=[]
-            for D in Depths:
-                ATPU.append(TPU(orders,D)[0])
-
-            colors = {'yes': 'green', 'no':'red'}
-            ax[1].scatter(ASCII_Out['Depth'],ASCII_Out['Depth TPU'],c=ASCII_Out['Within Allowable TVU'].map(colors))
-            ax[1].plot(Depths, ATPU)
-            ax[1].set_title('Vertical Accuracy Scatterplot) ' + '(Order = ' + str(orders) + ')\n Red - Outside Allowable Green - Within Allowable(' + str(P_W_A_TVU) + '%)')
-            ax[1].set_xlabel('Depth (m)')
-            ax[1].set_ylabel('Depth Accuracy (m)')
-            plt.tight_layout()
-            plt.savefig(V_F  + '/' + self.QC_Folder + '/' + self.V + '_' + orders + '_Accuracy.png', dpi=200)
-        TVU_QC.to_csv(V_F  + '/' + self.QC_Folder + '/' + self.V + '_TVUQC.csv', sep=',' , header=True, index=False)
-
-
     def Finalize_Surfaces(self):
 
         V_F = self.VALSRC_F.get()
@@ -4139,71 +4090,14 @@ class Application(Frame):
             Final.write('cd '+ Caris + '\n')
 
             for VALSRCno in list_VF:
-                if VALSRCno.endswith(".csar"):
-                    VALSRCno = VALSRCno.replace(".csar", "")
+                if VALSRCno.lower().endswith(".csar"):
+                    name = os.path.splitext(VALSRCno)[0]
                     Final.write('carisbatch --run FinalizeRaster --include-band  Depth --include-band Uncertainty '  +
                                 '--apply-designated --uncertainty-source UNCERT ' +
-                                V_F +  '/' + VALSRCno + '.csar ' +
-                                V_F + '/' + self.Finalized_Folder + '/' + VALSRCno + '.csar' +'\n')
+                                V_F +  '/' + name + '.csar ' +
+                                V_F + '/' + self.Finalized_Folder + '/' + name + '.csar' +'\n')
 
         p = S.check_call("Finalized.bat", stdin=None, stdout=None, stderr=None, shell=False)
-
-
-    def HIPS11_to_BASE4(self):
-        """ This Function runs processing steps based on user inputs"""
-        BASE4 = ('C:/Program Files/CARIS/BASE Editor/4.4/bin')
-        HIPS11 =  ('C:/Program Files/CARIS/HIPS and SIPS/11.3/bin')
-
-        Gridding_Method = 'SHOAL'
-        V_F = (str(self.VALSRC_F.get()) + '/' + self.Finalized_Folder)
-        list_VF = listdir(V_F)
-
-
-        for file in list_VF:
-            if file.endswith(".csar"):
-                File_Name = file.replace(".csar", "")
-
-                #Parse the Csar xml
-                xmldoc = minidom.parse(V_F + '/' + str(File_Name) + '.xml')
-                res_xml_loc = (xmldoc.getElementsByTagName('gco:Measure')[0])
-                res_child_loc  =res_xml_loc.childNodes[0].nodeValue
-                Gridding_Resolution = str(res_child_loc)
-
-                CRS_xml_loc = (xmldoc.getElementsByTagName('gco:CharacterString')[4])
-                CRS_child_loc = CRS_xml_loc.childNodes[0].nodeValue
-                CRS_T = CRS_child_loc.partition(',')[0]
-
-                if CRS_T == 'PROJCS["NAD83(CSRS) / UTM zone 19N"':
-                    CRS = 'EPSG:2960'
-                elif CRS_T == 'PROJCS["NAD83(CSRS) / UTM zone 20N"':
-                    CRS = 'EPSG:2961'
-                elif CRS_T == 'PROJCS["NAD83(CSRS) / UTM zone 21N"':
-                    CRS = 'EPSG:2962'
-                elif CRS_T == 'GEOGCS["ITRF2014"':
-                    CRS = 'EPSG:8999'
-
-                with open("HIPS11_to_BASE4.bat", "w") as Export:
-                        Export.write('@ECHO OFF' + '\n')
-                        Export.write('cd '+ Caris + '\n')
-                        Export.write('@ECHO Exporting Coverage to ACSII' + '\n')
-                        Export.write('carisbatch --run ExportCoverageToASCII' +
-                                     ' --include POSITION X 3 m  --include POSITION Y 3 m' +
-                                     ' --include BAND Depth 3 m ' +
-                                     V_F + '/' + file +
-                                     '  ' + V_F + '/'  + File_Name +
-                                     '.txt' + '\n')
-                        Export.write('cd '+ BASE4 + '\n')
-                        Export.write('@ECHO Importing Coverage to Base 4' + '\n')
-                        Export.write('carisbatch --run ImportPoints --input-format ASCII' +
-                                     ' --gridding-method ' + str(Gridding_Method) +
-                                     ' --resolution ' + Gridding_Resolution + 'm' +
-                                     ' --include-band ALL' +
-                                     ' --input-crs ' + CRS +
-                                     ' --info-file ' + owd + '/Export_HIPS11_to_BASE4.info ' + V_F + '/' + File_Name  +
-                                     '.txt ' + V_F + '/'  + File_Name +
-                                     '_4.4.csar'+ '\n')
-
-                p = S.check_call("HIPS11_to_BASE4.bat", stdin=None, stdout=None, stderr=None, shell=False)
 
 
     def ExporttoACSII(self):
@@ -4336,7 +4230,6 @@ class Application(Frame):
         Report_F = self.REP_F.get()
         Weekly_Report = self.WREP_F.get()
         Name = self.WeekNO.get()
-        New_Sheet = self.New_Sheet.get()
         order = self.IHO_ORDER2.get()
         TPUQCFolder = str('TPUQC')
 
@@ -4490,8 +4383,18 @@ class Application(Frame):
         Total_Survey_Area = round(sum(Areas)/(1000*1000),3)
 
         myworkbook2 = openpyxl.load_workbook(Report_F)
-        cws = myworkbook2.create_sheet(JD)
-        worksheet = myworkbook2.get_sheet_by_name(JD)
+
+        if "Sheet1" in myworkbook2.sheetnames and len(myworkbook2.sheetnames) == 1:
+            std = myworkbook2["Sheet1"]
+            myworkbook2.remove(std)
+
+        if str(JD) in myworkbook2.sheetnames:
+            worksheet = myworkbook2[str(JD)]
+            worksheet.delete_rows(1, worksheet.max_row)
+        else:
+            worksheet = myworkbook2.create_sheet(title=str(JD))
+        #cws = myworkbook2.create_sheet(JD)
+        #worksheet = myworkbook2.get_sheet_by_name(JD)
 
         from openpyxl.utils.dataframe import dataframe_to_rows
         rows = dataframe_to_rows(Line_Report)
@@ -4519,7 +4422,8 @@ class Application(Frame):
         myworkbook2.save(Report_F)
 
         wb = openpyxl.load_workbook(Report_F)
-        ws = wb.get_sheet_by_name(JD)
+        #ws = wb.get_sheet_by_name(JD)
+        ws = wb[str(JD)]
         if self.TPUQC.get()==1:
             img = openpyxl.drawing.image.Image(str(Out) + '/' + str(JD) + '/' + 'TPUQC' +  '/Coverage/' + order + '_Accuracy.png')
         elif self.TPUQC.get()==2:
@@ -4529,11 +4433,15 @@ class Application(Frame):
         startfile(Report_F)
 
         Weekly = openpyxl.load_workbook(Weekly_Report)
-        worksheet = Weekly.get_sheet_by_name(Name)
-        Space = len(worksheet['A']) + 1
+        if Name in Weekly.sheetnames:
+            worksheet = Weekly[Name]
+        else:
+            worksheet = Weekly.create_sheet(Name)
+        #worksheet = Weekly.get_sheet_by_name(Name)
+        Space = worksheet.max_row #len(worksheet['A']) + 1
         
         worksheet['A'+ str(1 + Space)] = ('Summary JD' + str(JD))
-        worksheet.merge_cells('A'+ str(1) + ':B' + str(1))
+        worksheet.merge_cells('A'+ str(1 + Space) + ':B' + str(1 + Space))
         worksheet['A'+ str(2 + Space)] = ('Total Survey Time (hh:mm:ss.sss)')
         worksheet['A'+ str(3 + Space)] = ('Total Length (km)')
         worksheet['A'+ str(4 + Space)] = ('Total Area sqkm')
@@ -4581,14 +4489,16 @@ class Application(Frame):
         lines = hips.get_lines()
         tot = 0
 
-        Vessels = list(hips.get_vessels())
+        try:
+            Vessels = list(hips.get_vessels())
+        except Exception:
+            Vessels = []
+    
         vessel_n = []
 
-        i = 1
-        while i <= len(Vessels):
-            v = list(Vessels[i-1])
-            vessel_n.append(v[1])
-            i = i + 1
+        for v in Vessels:
+            if isinstance(v, (list, tuple)) and len(v) > 1:
+                vessel_n.append(os.path.basename(v[1]))
 
         LR = pd.DataFrame()
         for line in lines:
@@ -4596,15 +4506,25 @@ class Application(Frame):
             new_row = pd.DataFrame([dict_new])
             LR = pd.concat([LR, new_row], ignore_index=True)
 
-        print (LR)
+        LR['Vessel Id'] = pd.to_numeric(LR['Vessel Id'], errors='coerce')
+        LR['Vessel Name'] = None
+
         i2 = 1
         while i2 <= len(vessel_n):
-            LR['Vessel Id'].mask(LR['Vessel Id'] == float(i2), vessel_n[i2-1], inplace=True)
-            i2 = i2 + 1
+            LR.loc[LR['Vessel Id'] == float(i2), 'Vessel Name'] = vessel_n[i2-1]
+            i2 += 1
         LR['Vessel'] = Vessel
         LR['Day'] = (Year + '-' + JD)
 
-        LR = LR[LR['Raw Data Path'].str.contains(('.+' +'JD' +  JD + '.+'), regex=True)]
+        filtered = LR[LR['Raw Data Path'].astype(str).str.contains('JD' + JD, na=False)]
+
+        if not filtered.empty:
+            print(f"JD filter matched {len(filtered)} rows")
+            LR = filtered
+        else:
+            print("JD filter returned no rows. Using all lines.")
+
+        #LR = LR[LR['Raw Data Path'].str.contains(('.+' +'JD' +  JD + '.+'), regex=True)]
 
         LR['Georeferenced'].mask(LR['Georeferenced'] == 1, 'Yes', inplace=True)
         LR['Georeferenced'].mask(LR['Raw Range'] == 'None', 'No', inplace=True)
@@ -4642,9 +4562,11 @@ class Application(Frame):
         LR['Del Dft Loaded'].mask(LR['Del Dft Loaded'] == 'None', 'No', inplace=True)
         LR['Del Dft Loaded'].mask(LR['Del Dft Loaded'] == 1, 'Yes', inplace=True)
        
-        LR['Vertical Reference'].mask(LR['Vertical Reference'] == 0, 'NONE', inplace=True)
-        LR['Vertical Reference'].mask(LR['Vertical Reference'] == 1, 'TIDE', inplace=True)
-        LR['Vertical Reference'].mask(LR['Vertical Reference'] == 2, 'GPS', inplace=True)
+        #LR['Vertical Reference'].mask(LR['Vertical Reference'] == 0, 'NONE', inplace=True)
+        #LR['Vertical Reference'].mask(LR['Vertical Reference'] == 1, 'TIDE', inplace=True)
+        #LR['Vertical Reference'].mask(LR['Vertical Reference'] == 2, 'GPS', inplace=True)
+
+        LR['Vertical Reference'] = LR['Vertical Reference'].replace({0: 'NONE', 1: 'TIDE', 2: 'GPS', '0': 'NONE', '1': 'TIDE', '2': 'GPS'})
 
         
         LR['Total Time'] = (LR['Max Time'] - LR['Min Time'])/1000
@@ -4665,7 +4587,25 @@ class Application(Frame):
 
         LR = LR.sort_values(['Line Name'])
         print(LR)
-        LR.to_csv(Out + '/' + JD + '/LineReport_' + JD + '.csv')
+
+        LR_out = LR.copy()
+
+        yes_no_cols = ['Georeferenced',
+                        'Outdated',
+                        'Tide Available',
+                        'Del Dft Loaded',
+                        'Svp Corrected',
+                        'Tpu Computed',
+                        'Gps Vertical Reference Available',
+                        'Raw Range',
+                        'Data Confidence Computed',
+                        'Multiple Frequency']
+        
+        for col in yes_no_cols:
+            if col in LR_out.columns:
+                LR_out[col] = LR_out[col].replace({1: 'Yes', 0: 'No', '1': 'Yes', '0': 'No'})
+    
+        LR_out.to_csv(Out + '/' + JD + '/LineReport_' + JD + '.csv')
 
         self.Total_Survey_Length = (LR['Length'].sum())/1000
 
@@ -4712,21 +4652,36 @@ class Application(Frame):
                 mkdir(folder)
 
         startfile(P_F)
+    
+
+    def set_cell_text(self, cell, text):
+        if cell.paragraphs:
+            p = cell.paragraphs[0]
+
+            for run in p.runs:
+                run.text = ""
+            
+            run = p.add_run(text)
+            run.font.name = "Arial"
+
+            for i in range(len(cell.paragraphs) - 1, 0, -1):
+                cell._element.remove(cell.paragraphs[i]._element)
 
 
     def ISO_1001_07_A_F01(self):
 
         PH = self.split_Project_Name()
         Project_N = PH[0]
-        HIPSFILE = PH[1]
 
         Sub_Filedir = self.SUB_D.get()
-        D = '1001_07_A_F01_Template.docx'
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        D = os.path.join(script_dir, '1001_07_A_F01_Template.docx')
+
+        print("CURRENT WORKING DIR:", os.getcwd())
+        print("TEMPLATE EXISTS HERE?:", os.path.exists(D))
+
         document = Document(D)
         Sig = self.SIG.get()
-        Out = self.OUT_F.get()
-
-        f_lst = listdir(Sub_Filedir)
 
         dir_lst = []
         for filename in listdir(Sub_Filedir):
@@ -4737,43 +4692,137 @@ class Application(Frame):
         Files = []
         folder_size = []
         for f in dir_lst:
-            fso = com.Dispatch("Scripting.FileSystemObject")
-            folder = fso.GetFolder((Sub_Filedir + '/' + f) )
-            F_size = folder.Size
-            folder_size.append(F_size)
-            F = ((Sub_Filedir + '/' + f))
-            files = folders = 0
-            for _, dirnames, filenames in walk(F):
-                files += len(filenames)
+            dir_path = os.path.join(Sub_Filedir, f)
+
+            total_size = 0
+            files = 0
+            folders = 0
+
+            for root, dirnames, filenames in os.walk(dir_path):
                 folders += len(dirnames)
+                files += len(filenames)
+
+                for fname in filenames:
+                    fpath = os.path.join(root, fname)
+                    try:
+                        total_size += os.path.getsize(fpath)
+                    except:
+                        pass
+            folder_size.append(total_size)
             Folders.append(folders)
             Files.append(files)
 
         style = document.styles['Normal']
         font = style.font
-        font.name = 'Times New Roman'
-        document.tables #a list of all tables in document
-        document.tables[0].cell(1,1).text = (Project_N)
-        c = 2
+        for para in document.paragraphs:
+            for run in para.runs:
+                run.font.name = 'Arial'
+        table = document.tables[0] #a list of all tables in document
+        start_row = None
+
+        for i, row in enumerate(table.rows):
+            text = " ".join(cell.text for cell in row.cells)
+
+            if "Folder size" in text and "NTMASC" in text:
+                start_row = i + 1
+                break
+
+        if start_row is None:
+            print("ERROR: Could not find table start row")
+            return
+        #required_rows = len(dir_lst) + 2
+
+        end_row = None
+
+        for i, row in enumerate(table.rows):
+            text = " ".join(cell.text for cell in row.cells)
+
+            if "Additional Submission Notes" in text:
+                end_row = i
+                break
+
+        if end_row is None:
+            print("ERROR: Could not find end of data section")
+            return
+
+        needed_rows = len(dir_lst) - (end_row - start_row)
+
+        template_row = table.rows[start_row]
+
+        for _ in range(needed_rows):
+            new_row = deepcopy(template_row._element)
+            table._tbl.insert(end_row, new_row)
+            end_row += 1
+
+        for i, row in enumerate(table.rows):
+            text = " ".join(cell.text for cell in row.cells)
+
+            if "Additional Submission Notes" in text:
+                end_row = i
+                break
+        
+        for row in table.rows:
+            full_text = " ".join(cell.text for cell in row.cells)
+
+            if "Project Number & Location:" in full_text:
+                self.set_cell_text(row.cells[0], f"Project Number & Location: {Project_N}")
+                break
+    
+        #c = 3
         i = 0
-        t_d = DATES.datetime.today()
-        for f in dir_lst:
-            document.tables[0].cell(c,6).text = (str(dir_lst[i]))
-            document.tables[0].cell(c,7).text = (str(format(folder_size[i], ',')) + ' bytes ' +
-                                                 str(Files[i]) + ' Files ' +
-                                                 str(Folders[i]) + ' Folders ')
-            document.tables[0].cell(c,9).text = (str(Sig))
-            document.tables[0].cell(c,8).text = (str(t_d))
-            i = i + 1
-            c = c + 1
+            
+        #t_d = DATES.datetime.today()
+        t_d = datetime.today().strftime("%d-%m-%Y")
+        for i, f in enumerate(dir_lst):
+            row_index = start_row + i
 
-        document.tables[1].cell(0,0).text = ('Submission verified by Hydrographer in Charge : ' + str(Sig))
-        document.tables[1].cell(0,1).text = (str(t_d))
+            if row_index >= end_row:
+                break
 
+            row = table.rows[row_index]
+
+            if len(row.cells) < 4:
+                continue
+
+            self.set_cell_text(row.cells[0], f)
+            self.set_cell_text(row.cells[1],
+                                    f"Size: {format(folder_size[i], ',')} bytes\n"
+                                    f"Contains: {Files[i]} Files, {Folders[i]} Folders")
+            self.set_cell_text(row.cells[2], Sig)
+            self.set_cell_text(row.cells[3], f"{Sig}\n{t_d}")
+    
+
+            #c += 1
+            
+        table = document.tables[0]
+
+        for row in table.rows:
+            full_text = " ".join(cell.text for cell in row.cells)
+
+            if "Submission verified by Hydrographer in Charge (insert full name):" in full_text:
+                for cell in row.cells:
+                    if "Submission verified" in cell.text:
+                        self.set_cell_text(cell, f"Submission verified by Hydrographer in Charge: {Sig}")
+                
+                for cell in row.cells:
+                    if "Date:" in cell.text:
+                        self.set_cell_text(cell, f"Date: {t_d}")
+            
+            elif "Processed by HDC staff (insert full name):" in full_text:
+                for cell in row.cells:
+                    if "Processed by HDC staff (insert full name)" in cell.text:
+                        self.set_cell_text(cell, "Processed by HDC staff:")
+                
+                for cell in row.cells:
+                    if "Date:" in cell.text:
+                        self.set_cell_text(cell, "Date:")
+
+        
         doc = (Sub_Filedir + '/1001_07_A_F01_' + str(Project_N) + '.docx')
         document.save(doc)
 
         startfile(doc)
+
 
     def Find_Fliers(self):
 
@@ -4823,7 +4872,7 @@ def on_closing():
 
 root = Tk()
 root.title("CHS Pycessing Tool")
-root.geometry("700x650")
+root.geometry("700x750")
 menu = Menu(root)
 root.config(menu=menu)
 submenu = Menu(menu)
@@ -4839,18 +4888,16 @@ frame4 = ttk.Frame(notebook)
 notebook.add(frame4, text="Apply\nTides")
 frame5 = ttk.Frame(notebook)
 notebook.add(frame5, text="Compute\nTPU")
-frame6 = ttk.Frame(notebook)
-notebook.add(frame6, text="Apply\nSVP")
-notebook.grid(row=0, column=0)
 frame7 = ttk.Frame(notebook)
 notebook.add(frame7, text="HIPS\nGRID")
 notebook.grid(row=0, column=0)
 frame8 = ttk.Frame(notebook)
-notebook.add(frame8, text="Merge\nTracklines")
-notebook.grid(row=0, column=0)
+notebook.add(frame8, text="CA\nTools")
 frame9 = ttk.Frame(notebook)
 notebook.add(frame9, text="Reporting and \nData Submission")
 notebook.grid(row=0, column=0)
+frame10 = ttk.Frame(notebook)
+notebook.add(frame10, text="Finalization")
 app = Application(root)
 root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()

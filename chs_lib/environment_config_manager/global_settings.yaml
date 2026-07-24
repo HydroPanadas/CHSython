@@ -1,0 +1,20 @@
+Schema Info:
+    Version: 1
+Caris API:
+    Base_path: C:\Program Files\CARIS
+    Software: BASE Editor
+    Version: '6.1'
+    Python_version: '3.11'
+Caris Batch HIPS and SIPS:
+    Base_path: C:\Program Files\CARIS
+    Software: HIPS and SIPS
+    Version: '12.1'
+Caris Batch BASE Editor:
+    Base_path: C:\Program Files\CARIS
+    Software: BASE Editor
+    Version: '6.1'
+GUI:
+    # Thème disponible {azure, classic, sun-valley}
+    Theme: azure
+    # Option disponible pour azure et sun-valley {dark, light}
+    Style: light
