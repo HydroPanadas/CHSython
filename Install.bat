@@ -1,21 +1,27 @@
-#cd C:\Users\legermi\AppData\Local\Programs\Python\Python311\Scripts
-@ECHO OFF
-py -m pip install pandas
-py -m pip install numpy==1.26.4
-py -m pip install python-docx
-py -m pip install pywin32
-py -m pip install openpyxl
-py -m pip install pyshp
-py -m pip install matplotlib
-py -m pip install geopandas
-py -m pip install pygeoif
-py -m pip install tkcalendar
-py -m pip install shapely
-py -m pip install pyproj
-py -m pip install fiona
-py -m pip install urllib3
-py -m pip install bs4
-py -m pip install requests
+cd C:\Users\legermi\AppData\Local\Programs\Python\Python311\Scripts
+pip install pandas
+pip install numpy==1.26.4
+pip install python-docx
+pip install pywin32
+pip install openpyxl
+pip install pyshp
+pip install matplotlib
+pip install geopandas
+pip install pygeoif
+pip install tkcalendar
+pip install shapely
+pip install pyproj
+pip install fiona
+pip install urllib3
+pip install bs4
+pip install requests
+pip install pyyaml
+pip install psutil
+pip install wmi
+pip install scipy
+pip install C:\Tools\CHSython\GDAL\gdal-3.11.4-cp311-cp311-win_amd64.whl
 
 pause
+
+
 
