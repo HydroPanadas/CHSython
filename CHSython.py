@@ -648,7 +648,7 @@ class Application(Frame):
 
             ## Save R2Sonic .gsf Parameters to Parameters.txt
             Raw_List = [D_S, IN_OFF, REJ_OFF,'N/A','N/A','N/A','N/A','N/A','N/A','N/A','N/A','N/A']
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
+            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None, dtype=object)
             Parameters.iloc[4] = Raw_List
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
@@ -720,7 +720,7 @@ class Application(Frame):
 
             ## Save Compute GPS Tide Parameters to Parameters.txt
             GPST_List = [C_GPS_ADJ, SD_OFF, M_F, INFO_F,  INFO_CRS, W_L,'N/A','N/A','N/A','N/A','N/A','N/A']
-            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None)
+            Parameters = pd.read_csv('Parameters.txt', delimiter=',', header=None, dtype=object)
             Parameters.iloc[7] = GPST_List
             Parameters.to_csv('Parameters.txt', mode='w', index=False, header=False)
 
