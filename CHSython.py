@@ -2338,6 +2338,8 @@ class Application(Frame):
         L_R = listdir(RAW_F)
         crs = self.CRS_op.get()
         CRS = crs.partition(": ")[2]
+        crs2 = self.CRS_Import.get()
+        CRS2 = crs2.partition(": ")[2]
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
         Vessel = path.splitext(Vessel)[0]
@@ -2387,7 +2389,7 @@ class Application(Frame):
                            raw_f.append(RAW_F + '/' + file)
 
                 Import.write('carisbatch --run ImportToHIPS --input-format ' +
-                             H_Format + ' --convert-navigation ' + '--input-crs ' + CRS +
+                             H_Format + ' --convert-navigation ' + '--input-crs ' + CRS2 +
                              ' --vessel-file ' + Vessel_F +
                              ' --navigation-device ' + nav_d + ' --gps-height-device ' + gpsh_d +
                              ' --heading-device ' + heading_d +  ' --gps-timestamps ' + gps_t +
@@ -2427,7 +2429,7 @@ class Application(Frame):
                            raw_f.append(RAW_F + '/' + file)
 
                 Import.write('carisbatch --run ImportToHIPS --input-format ' +
-                             H_Format + ' --convert-navigation ' + '--input-crs ' + CRS +
+                             H_Format + ' --convert-navigation ' + '--input-crs ' + CRS2 +
                              ' --vessel-file ' + Vessel_F +
                              ' --navigation-device ' + nav_d + ' --gps-height-device ' + gpsh_d +
                              ' --heading-device ' + heading_d +  ' --heave-device ' + heave_d +
@@ -2463,7 +2465,7 @@ class Application(Frame):
                            raw_f.append(RAW_F + '/' + file)
 
                 Import.write('carisbatch --run ImportToHIPS --input-format ' +
-                             H_Format + ' --input-crs ' + CRS +
+                             H_Format + ' --input-crs ' + CRS2 +
                              ' --vessel-file ' + Vessel_F +
                              ' --depth-source ' + depth_s + ' --include-offline ' + ' ')
                 for file in raw_f:
@@ -2503,7 +2505,7 @@ class Application(Frame):
                            raw_f.append(RAW_F + '/' + file)
 
                 Import.write('carisbatch --run ImportToHIPS --input-format ' +
-                             H_Format + ' --input-crs ' + CRS +
+                             H_Format + ' --input-crs ' + CRS2 +
                              ' --vessel-file ' + Vessel_F +
                              ' --navigation-device ' + nav_dx + ' --gps-height-device ' + gpsh_dx +
                              ' --heading-device ' + heading_dx +
@@ -2542,7 +2544,7 @@ class Application(Frame):
                         else:
                            raw_f.append(RAW_F + '/' + file)
                 Import.write('carisbatch --run ImportToHIPS --input-format ' +
-                             H_Format + ' --input-crs ' + CRS +
+                             H_Format + ' --input-crs ' + CRS2 +
                              ' --convert-bathymetry ' + CB + ' --navigation-device ' +
                              ND + ' --heading-device ' + HD + ' --motion-device ' + MD +
                              ' --swath-device ' + SD + ' ')
