@@ -2336,7 +2336,7 @@ class Application(Frame):
         HDCS_Folder = self.HDCS_D.get()
         RAW_F = self.RAW_F.get()
         L_R = listdir(RAW_F)
-        crs = self.CRS_Import.get()
+        crs = self.CRS_op.get()
         CRS = crs.partition(": ")[2]
         Vessel_F = self.VESSEL_N.get()
         Vessel = path.basename(Vessel_F)
